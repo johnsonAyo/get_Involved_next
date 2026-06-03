@@ -1,9 +1,9 @@
-"use client";
 
-import dynamic from "next/dynamic";
 
-const AboutRoute = dynamic(() => import("../_routes/AboutRoute"), { ssr: false });
+import { AboutPage } from "./AboutClient";
+
+export const dynamic = "force-static";
 
 export default function Page() {
-  return <AboutRoute />;
+  return <AboutPage />;
 }

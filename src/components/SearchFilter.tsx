@@ -1,4 +1,7 @@
+"use client";
+
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { getLgas } from "../data/nigeria.js";
 import { sortedStates } from "../constants/nigeria";
 import { toCandidateSearchPath } from "../lib/candidateSearch";
@@ -7,14 +10,13 @@ import { DropdownSelect } from "./DropdownSelect";
 type Props = {
   initialStateId?: string;
   initialLga?: string;
-  onNavigate?: (path: string) => void;
 };
 
 export function SearchFilter({
   initialStateId = "",
   initialLga = "",
-  onNavigate,
 }: Props) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [stateId, setStateId] = useState(initialStateId);
   const [lga, setLga] = useState(initialLga);
@@ -26,7 +28,7 @@ export function SearchFilter({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onNavigate?.(
+    router.push(
       toCandidateSearchPath({
         query,
         state: stateId,

@@ -1,9 +1,30 @@
-"use client";
+import { HomePage } from "./HomeClient";
+import { getCandidates, getFacts } from "@/lib/content-store.server";
 
-import dynamic from "next/dynamic";
+type SearchParams = Record<string, string | string[] | undefined>;
 
-const HomeRoute = dynamic(() => import("./_routes/HomeRoute"), { ssr: false });
+function readSearchParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  return typeof value === "string" ? value : Array.isArray(value) ? value[0] : undefined;
+}
 
-export default function Page() {
-  return <HomeRoute />;
+export const dynamic = "force-dynamic";
+
+export default async function Page({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
+  const params = (searchParams ? await searchParams : {}) as SearchParams;
+  const [candidates, facts] = await Promise.all([getCandidates(), getFacts()]);
+
+  return (
+    <HomePage
+      candidates={candidates}
+      facts={facts}
+      initialLga={readSearchParam(params.lga) || ""}
+      initialStateId={readSearchParam(params.state) || ""}
+    />
+  );
 }

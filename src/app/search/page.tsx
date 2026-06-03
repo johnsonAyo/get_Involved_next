@@ -1,9 +1,10 @@
-"use client";
+import { CandidatePage } from "../candidates/CandidateClient";
+import { getCandidates } from "@/lib/content-store.server";
 
-import dynamic from "next/dynamic";
+export const dynamic = "force-dynamic";
 
-const SearchRoute = dynamic(() => import("../_routes/SearchRoute"), { ssr: false });
+export default async function Page() {
+  const candidates = await getCandidates();
 
-export default function Page() {
-  return <SearchRoute />;
+  return <CandidatePage candidates={candidates} />;
 }

@@ -1,9 +1,7 @@
-"use client";
+import { ReportPage } from "./ReportClient";
 
-import dynamic from "next/dynamic";
-
-const ReportRoute = dynamic(() => import("../_routes/ReportRoute"), { ssr: false });
+export const dynamic = "force-static";
 
 export default function Page() {
-  return <ReportRoute />;
+  return <ReportPage />;
 }

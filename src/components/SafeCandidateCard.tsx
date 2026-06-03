@@ -4,7 +4,6 @@ import { ComponentErrorBoundary } from "./ComponentErrorBoundary";
 
 type Props = {
   candidate: Candidate;
-  onNavigate?: (path: string) => void;
   variant?: "default" | "home";
 };
 
@@ -21,10 +20,10 @@ function CandidateCardFallback() {
   );
 }
 
-export function SafeCandidateCard({ candidate, onNavigate, variant = "default" }: Props) {
+export function SafeCandidateCard({ candidate, variant = "default" }: Props) {
   return (
     <ComponentErrorBoundary fallback={<CandidateCardFallback />}>
-      <CandidateCard candidate={candidate} onNavigate={onNavigate} variant={variant} />
+      <CandidateCard candidate={candidate} variant={variant} />
     </ComponentErrorBoundary>
   );
 }

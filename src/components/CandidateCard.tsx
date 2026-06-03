@@ -1,41 +1,16 @@
 import type { Candidate } from "../types/domain";
 import { getState } from "../data/nigeria.js";
+import Link from "next/link";
 
 type Props = {
   candidate: Candidate;
-  onNavigate?: (path: string) => void;
   variant?: "default" | "home";
 };
 
-export function CandidateCard({ candidate, onNavigate, variant = "default" }: Props) {
+export function CandidateCard({ candidate, variant = "default" }: Props) {
   const detailsUrl = `/candidates/${candidate.id}`;
   const candidateLinkUrl = candidate.profileUrl || detailsUrl;
   const isExternalProfileLink = Boolean(candidate.profileUrl);
-
-  const handleDetailsClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (isExternalProfileLink) {
-      return;
-    }
-
-    if (onNavigate) {
-      e.preventDefault();
-      onNavigate(detailsUrl);
-    }
-  };
-
-  const handleStateLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (onNavigate && candidate.stateId) {
-      e.preventDefault();
-      onNavigate(`/states?state=${candidate.stateId.toLowerCase()}`);
-    }
-  };
-
-  const handleLgaLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (onNavigate && candidate.stateId && candidate.lga) {
-      e.preventDefault();
-      onNavigate(`/states?state=${candidate.stateId.toLowerCase()}&lga=${encodeURIComponent(candidate.lga)}`);
-    }
-  };
 
   const logoSrc = candidate.logo;
   const sources = Array.isArray(candidate.source)
@@ -65,45 +40,48 @@ export function CandidateCard({ candidate, onNavigate, variant = "default" }: Pr
       <div className="ds-candidate-card__number">{candidate.party}</div>
       <div className="ds-candidate-card__status" style={{ backgroundColor: "rgba(0, 135, 83, 0.08)", color: "var(--ds-color-accent)", borderColor: "rgba(0, 135, 83, 0.2)" }}>{candidate.position}</div>
       <p className="ds-candidate-card__text" style={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}>
-        <a
-          href={candidateLinkUrl}
-          onClick={handleDetailsClick}
-          className="ds-candidate-card__inline-link"
-          rel={isExternalProfileLink ? "noopener noreferrer" : undefined}
-          target={isExternalProfileLink ? "_blank" : undefined}
-        >
-          {candidate.candidateName}
-        </a>
+        {isExternalProfileLink ? (
+          <a
+            href={candidateLinkUrl}
+            className="ds-candidate-card__inline-link"
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            {candidate.candidateName}
+          </a>
+        ) : (
+          <Link href={candidateLinkUrl} className="ds-candidate-card__inline-link">
+            {candidate.candidateName}
+          </Link>
+        )}
         {candidate.viceCandidateName && (
           <span style={{ display: "block", fontSize: "0.85em", opacity: 0.75, marginTop: "0.25rem" }}>
             Running Mate:{" "}
-            <a href={detailsUrl} onClick={handleDetailsClick} className="ds-candidate-card__inline-link">
+            <Link href={detailsUrl} className="ds-candidate-card__inline-link">
               {candidate.viceCandidateName}
-            </a>
+            </Link>
           </span>
         )}
       </p>
       {(stateName || lgaName) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
           {stateName && (
-            <a
+            <Link
               href={`/states?state=${candidate.stateId?.toLowerCase()}`}
-              onClick={handleStateLinkClick}
               className="ds-candidate-card__status ds-candidate-card__inline-link"
               style={{ textDecoration: "none" }}
             >
               {stateName}
-            </a>
+            </Link>
           )}
           {lgaName && (
-            <a
+            <Link
               href={`/states?state=${candidate.stateId?.toLowerCase()}&lga=${encodeURIComponent(lgaName)}`}
-              onClick={handleLgaLinkClick}
               className="ds-candidate-card__status ds-candidate-card__inline-link"
               style={{ textDecoration: "none" }}
             >
               {lgaName}
-            </a>
+            </Link>
           )}
         </div>
       )}

@@ -1,10 +1,7 @@
 import { Wordmark } from "./Wordmark";
+import Link from "next/link";
 
-type Props = {
-  onNavigate?: (path: string) => void;
-};
-
-export function SiteFooter({ onNavigate }: Props) {
+export function SiteFooter() {
   return (
     <footer className="ds-panel ds-panel--ink site-footer">
       <div className="site-footer__inner">
@@ -18,69 +15,29 @@ export function SiteFooter({ onNavigate }: Props) {
         <nav className="site-footer__nav" aria-label="Footer">
           <ul>
             <li>
-              <a
-                href="/about"
-                onClick={(e) => {
-                  if (onNavigate) {
-                    e.preventDefault();
-                    onNavigate("/about");
-                  }
-                }}
-              >
+              <Link href="/about">
                 About
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="/states"
-                onClick={(e) => {
-                  if (onNavigate) {
-                    e.preventDefault();
-                    onNavigate("/states");
-                  }
-                }}
-              >
+              <Link href="/states">
                 All 36 states
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="/candidates"
-                onClick={(e) => {
-                  if (onNavigate) {
-                    e.preventDefault();
-                    onNavigate("/candidates");
-                  }
-                }}
-              >
+              <Link href="/candidates">
                 Candidates
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="/report"
-                onClick={(e) => {
-                  if (onNavigate) {
-                    e.preventDefault();
-                    onNavigate("/report");
-                  }
-                }}
-              >
+              <Link href="/report">
                 Corrections
-              </a>
+              </Link>
             </li>
             <li>
-              <a
-                href="/report"
-                onClick={(e) => {
-                  if (onNavigate) {
-                    e.preventDefault();
-                    onNavigate("/report");
-                  }
-                }}
-              >
+              <Link href="/report">
                 Report an issue
-              </a>
+              </Link>
             </li>
           </ul>
         </nav>
@@ -88,18 +45,12 @@ export function SiteFooter({ onNavigate }: Props) {
           <p className="ds-eyebrow ds-eyebrow--accent">Submit a candidate</p>
           <p>
             If you have any aspirant or candidate not on this profile,{" "}
-            <a
+            <Link
               href="/submit-candidate"
-              onClick={(e) => {
-                if (onNavigate) {
-                  e.preventDefault();
-                  onNavigate("/submit-candidate");
-                }
-              }}
               style={{ color: "var(--ds-color-accent)", fontWeight: "bold" }}
             >
               submit their profile here
-            </a>
+            </Link>
             .
           </p>
         </div>

@@ -1,66 +1,32 @@
 import { Wordmark } from "./Wordmark";
+import Link from "next/link";
 
-type Props = {
-  onNavigate?: (path: string) => void;
-};
-
-export function SiteHeader({ onNavigate }: Props) {
-  const handleHomeClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    if (!onNavigate) return;
-    e.preventDefault();
-    onNavigate("/");
-  };
-
+export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        <a
-          aria-label="Will of the People home"
-          href="/"
-          onClick={handleHomeClick}
-        >
+        <Link aria-label="Will of the People home" href="/">
           <Wordmark className="ds-wordmark--header" />
-        </a>
+        </Link>
         <nav className="site-header__nav" aria-label="Primary">
           <ul className="site-header__nav-list">
             <li>
-              <a
-                href="/search"
-                onClick={(e) => {
-                  if (!onNavigate) return;
-                  e.preventDefault();
-                  onNavigate("/search");
-                }}
-              >
+              <Link href="/search">
                 Search
-              </a>
+              </Link>
             </li>
             <li className="site-header__nav-item">
-              <a
-                href="/states"
-                onClick={(e) => {
-                  if (!onNavigate) return;
-                  e.preventDefault();
-                  onNavigate("/states");
-                }}
-              >
+              <Link href="/states">
                 States
-              </a>
+              </Link>
             </li>
             <li className="site-header__nav-item">
-              <a
-                href="/candidates"
-                onClick={(e) => {
-                  if (!onNavigate) return;
-                  e.preventDefault();
-                  onNavigate("/candidates");
-                }}
-              >
+              <Link href="/candidates">
                 Candidates
-              </a>
+              </Link>
             </li>
             <li className="site-header__nav-submit">
-              <a
+              <Link
                 href="/submit-candidate"
                 className="ds-button ds-button--primary"
                 style={{
@@ -72,38 +38,19 @@ export function SiteHeader({ onNavigate }: Props) {
                   color: "var(--ds-color-accent-ink)",
                   width: "fit-content",
                 }}
-                onClick={(e) => {
-                  if (!onNavigate) return;
-                  e.preventDefault();
-                  onNavigate("/submit-candidate");
-                }}
               >
                 Submit a Candidate
-              </a>
+              </Link>
             </li>
             <li className="site-header__nav-about">
-              <a
-                href="/about"
-                onClick={(e) => {
-                  if (!onNavigate) return;
-                  e.preventDefault();
-                  onNavigate("/about");
-                }}
-              >
+              <Link href="/about">
                 About
-              </a>
+              </Link>
             </li>
             <li className="site-header__nav-report">
-              <a
-                href="/report"
-                onClick={(e) => {
-                  if (!onNavigate) return;
-                  e.preventDefault();
-                  onNavigate("/report");
-                }}
-              >
+              <Link href="/report">
                 Report an Issue
-              </a>
+              </Link>
             </li>
           </ul>
         </nav>

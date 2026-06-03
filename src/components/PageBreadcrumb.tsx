@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type BreadcrumbItem = {
   href?: string;
   label: string;
@@ -22,17 +24,12 @@ export function PageBreadcrumb({ items }: Props) {
                   {item.label}
                 </span>
               ) : (
-                <a
+                <Link
                   className="page-breadcrumb__link"
                   href={item.href ?? "#"}
-                  onClick={(event) => {
-                    if (!item.onClick) return;
-                    event.preventDefault();
-                    item.onClick();
-                  }}
                 >
                   {item.label}
-                </a>
+                </Link>
               )}
               {!isLast ? (
                 <span aria-hidden="true" className="page-breadcrumb__sep">

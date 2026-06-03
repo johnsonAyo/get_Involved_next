@@ -11,6 +11,7 @@ export type Party = {
 
 export type Candidate = {
   id: Id;
+  year?: number;
   candidateName: string;
   profileUrl?: string;
   party: string;
@@ -24,6 +25,8 @@ export type Candidate = {
   lga?: string;
   logo?: string;
   source?: string | string[];
+  positionSortOrder?: number;
+  display?: boolean;
 };
 
 export type Fact = {
@@ -31,6 +34,11 @@ export type Fact = {
   category?: string;
   text?: string;
   source?: string;
+};
+
+export type DirectoryStateOption = {
+  id: string;
+  name: string;
 };
 
 export type CandidateSubmission = {

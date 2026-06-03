@@ -1,15 +1,15 @@
-"use client";
+import { CandidatePage } from "../CandidateClient";
+import { getCandidates } from "@/lib/content-store.server";
 
-import dynamic from "next/dynamic";
-import { useParams } from "next/navigation";
+export const dynamic = "force-dynamic";
 
-const CandidateDetailRoute = dynamic(
-  () => import("../../_routes/CandidateDetailRoute"),
-  { ssr: false },
-);
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const candidates = await getCandidates();
 
-export default function Page() {
-  const params = useParams<{ id: string }>();
-
-  return <CandidateDetailRoute candidateId={params.id} />;
+  return <CandidatePage candidateId={id} candidates={candidates} />;
 }

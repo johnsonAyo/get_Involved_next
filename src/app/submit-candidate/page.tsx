@@ -1,12 +1,24 @@
-"use client";
+import { SubmitCandidatePage } from "./SubmitCandidateClient";
+import {
+  getDirectoryStates,
+  getParties,
+  getPositions,
+} from "@/lib/content-store.server";
 
-import dynamic from "next/dynamic";
+export const dynamic = "force-dynamic";
 
-const SubmitCandidateRoute = dynamic(
-  () => import("../_routes/SubmitCandidateRoute"),
-  { ssr: false },
-);
+export default async function Page() {
+  const [positions, states, parties] = await Promise.all([
+    getPositions(),
+    getDirectoryStates(),
+    getParties(),
+  ]);
 
-export default function Page() {
-  return <SubmitCandidateRoute />;
+  return (
+    <SubmitCandidatePage
+      parties={parties}
+      positions={positions}
+      states={states}
+    />
+  );
 }
