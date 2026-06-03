@@ -1,6 +1,6 @@
 export type StateId = string;
 
-export type Id = string | number;
+export type Id = string;
 
 export type Party = {
   id: string;
@@ -14,6 +14,7 @@ export type Candidate = {
   year?: number;
   candidateName: string;
   profileUrl?: string;
+  profilePictureUrl?: string;
   party: string;
   partyFullName?: string;
   partyId?: string;
@@ -25,7 +26,6 @@ export type Candidate = {
   lga?: string;
   logo?: string;
   source?: string | string[];
-  positionSortOrder?: number;
   display?: boolean;
 };
 

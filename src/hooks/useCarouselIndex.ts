@@ -7,6 +7,7 @@ type Options = {
 
 export function useCarouselIndex({ delayMs, length }: Options) {
   const [index, setIndex] = useState(0);
+  const [lastInteraction, setLastInteraction] = useState(Date.now());
 
   useEffect(() => {
     if (!length) return undefined;
@@ -16,8 +17,13 @@ export function useCarouselIndex({ delayMs, length }: Options) {
     }, delayMs);
 
     return () => window.clearInterval(timer);
-  }, [delayMs, length]);
+  }, [delayMs, length, lastInteraction]);
 
-  return { index, setIndex };
+  const setIndexWithInteraction = (newIndex: number | ((current: number) => number)) => {
+    setIndex(newIndex);
+    setLastInteraction(Date.now());
+  };
+
+  return { index, setIndex: setIndexWithInteraction };
 }
 

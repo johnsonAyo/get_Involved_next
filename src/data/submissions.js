@@ -20,32 +20,6 @@ async function handleResponseError(resp) {
   throw new Error(errorMessage);
 }
 
-export async function submitCandidate(data) {
-  const url = process.env.NEXT_PUBLIC_FORMS_API_URL;
-
-  if (!url) {
-    console.warn(
-      "NEXT_PUBLIC_FORMS_API_URL not set - falling back to local console log for submitCandidate",
-    );
-    console.log("Submitting candidate record:", data);
-    return { success: true };
-  }
-
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Accept": "application/json",
-    },
-    body: JSON.stringify(data),
-  });
-
-  if (!resp.ok) {
-    await handleResponseError(resp);
-  }
-
-  return resp.json();
-}
 
 export async function submitReport(data) {
   const url = process.env.NEXT_PUBLIC_FORMS_API_URL;

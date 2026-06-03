@@ -30,11 +30,18 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
       className={`ds-candidate-card${variant === "home" ? " ds-candidate-card--home" : ""}`}
       style={{ position: "relative" }}
     >
+      {candidate.profilePictureUrl && (
+        <img 
+          src={candidate.profilePictureUrl} 
+          alt={`${candidate.candidateName} profile picture`} 
+          className="ds-candidate-card__profile-pic"
+        />
+      )}
       {logoSrc && (
         <img 
           src={logoSrc} 
           alt={`${candidate.party} logo`} 
-          className={`ds-candidate-card__logo ${candidate.partyId === "ndc" ? "ds-candidate-card__logo--ndc" : ""}`}
+          className={`ds-candidate-card__logo ${candidate.profilePictureUrl ? "ds-candidate-card__logo--bottom-right" : ""} ${candidate.partyId === "ndc" ? "ds-candidate-card__logo--ndc" : ""}`}
         />
       )}
       <div className="ds-candidate-card__number">{candidate.party}</div>

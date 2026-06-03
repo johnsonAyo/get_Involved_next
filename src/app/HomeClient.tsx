@@ -48,15 +48,25 @@ export function HomePage({
   }
 
   function handlePointerUp(e: React.PointerEvent<HTMLDivElement>) {
-    if (pointerStartX === null || pointerEndX === null || facts.length === 0) return;
-    const distance = pointerStartX - pointerEndX;
-    if (distance > MIN_SWIPE_DISTANCE) {
-      // Swipe left (next)
+    if (pointerStartX === null || facts.length === 0) return;
+
+    if (pointerEndX === null) {
+      // Pure click (no pointer move)
       setFeaturedIndex((featuredIndex + 1) % facts.length);
-    } else if (distance < -MIN_SWIPE_DISTANCE) {
-      // Swipe right (prev)
-      setFeaturedIndex((featuredIndex - 1 + facts.length) % facts.length);
+    } else {
+      const distance = pointerStartX - pointerEndX;
+      if (distance > MIN_SWIPE_DISTANCE) {
+        // Swipe left (next)
+        setFeaturedIndex((featuredIndex + 1) % facts.length);
+      } else if (distance < -MIN_SWIPE_DISTANCE) {
+        // Swipe right (prev)
+        setFeaturedIndex((featuredIndex - 1 + facts.length) % facts.length);
+      } else {
+        // Tiny swipe, treat as click
+        setFeaturedIndex((featuredIndex + 1) % facts.length);
+      }
     }
+
     setPointerStartX(null);
     setPointerEndX(null);
     e.currentTarget.releasePointerCapture(e.pointerId);

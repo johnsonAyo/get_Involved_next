@@ -303,6 +303,25 @@ ul {
   z-index: 10;
 }
 
+.ds-candidate-card__profile-pic {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  width: 5rem;
+  height: 5rem;
+  object-fit: cover;
+  border-radius: 50%;
+  z-index: 10;
+  border: 2px solid var(--ds-color-surface);
+  box-shadow: 0 0 0 1px var(--ds-color-ink-a10);
+}
+
+.ds-candidate-card__logo--bottom-right {
+  top: auto;
+  bottom: 0.1rem;
+  right: 1.25rem;
+}
+
 @media (min-width: 64.01rem) {
   .ds-candidate-card__logo--ndc {
     width: 6rem;

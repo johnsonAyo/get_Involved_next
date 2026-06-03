@@ -1,4 +1,4 @@
-import { fetchFacts } from "@/data/facts.js";
+
 import type { Candidate, DirectoryStateOption, Fact, Party } from "@/types/domain";
 import { createClient } from "@supabase/supabase-js";
 
@@ -26,8 +26,10 @@ type CandidateRow = {
   display: boolean | null;
   source: unknown;
   profile: {
-    full_name: string;
+    id: string;
+    full_name: string | null;
     profile_url: string | null;
+    profile_picture_url: string | null;
   } | null;
   party: {
     id: string;
@@ -79,12 +81,12 @@ function mapSupabaseCandidate(row: CandidateRow): Candidate {
     party: row.party?.abbreviation || "Independent",
     partyFullName: row.party?.name || "Independent",
     position: safePosition,
-    positionSortOrder: row.position_sort_order ?? undefined,
     stateId: row.state_id?.toLowerCase() || "",
     lga: row.lga || "",
     display: row.display !== false,
     source: normalizeSource(row.source),
     profileUrl: row.profile?.profile_url || "",
+    profilePictureUrl: row.profile?.profile_picture_url || "",
     logo: row.party?.logo || "",
   };
 }
@@ -104,14 +106,13 @@ async function getCandidatesFromSupabase(): Promise<Candidate[] | null> {
       .from("candidates")
       .select('*')
       .eq("display", true)
-      .order("position_sort_order", { ascending: true, nullsFirst: false })
       .order("year", { ascending: false, nullsFirst: false });
 
     if (error || !Array.isArray(candidates) || candidates.length === 0) {
       return null;
     }
 
-    const { data: profilesData } = await supabase.from("profile").select("id, full_name, profile_url");
+    const { data: profilesData } = await supabase.from("profile").select("id, full_name, profile_url, profile_picture_url");
     const { data: partiesData } = await supabase.from("parties").select("id, abbreviation, name, logo");
 
     const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
@@ -128,15 +129,19 @@ async function getCandidatesFromSupabase(): Promise<Candidate[] | null> {
 
     const mapped = enrichedData.map((row) => mapSupabaseCandidate(row as unknown as CandidateRow));
 
+    const positionsList = getPositions().map(p => p.toLowerCase());
+    const getPositionOrder = (pos: string) => {
+      if (!pos) return Number.MAX_SAFE_INTEGER;
+      const p = pos.toLowerCase();
+      const index = positionsList.findIndex(x => p.includes(x) || x.includes(p));
+      return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+    };
+
     return mapped.sort((a, b) => {
-      // 1. Sort by position_sort_order first
-      const explicitOrderA = typeof a.positionSortOrder === "number" ? a.positionSortOrder : null;
-      const explicitOrderB = typeof b.positionSortOrder === "number" ? b.positionSortOrder : null;
-      if (explicitOrderA !== null || explicitOrderB !== null) {
-        const aValue = explicitOrderA ?? Number.MAX_SAFE_INTEGER;
-        const bValue = explicitOrderB ?? Number.MAX_SAFE_INTEGER;
-        if (aValue !== bValue) return aValue - bValue;
-      }
+      // 1. Sort by computed position order first
+      const orderA = getPositionOrder(a.position);
+      const orderB = getPositionOrder(b.position);
+      if (orderA !== orderB) return orderA - orderB;
 
       // 2. Sort preferred presidential parties first if both are president
       if (a.position?.toLowerCase().includes("president") || b.position?.toLowerCase().includes("president")) {
@@ -214,7 +219,16 @@ export function getPositions(): string[] {
 }
 
 export async function getFacts(): Promise<Fact[]> {
-  return (await fetchFacts()) as Fact[];
+  if (!hasServerSupabaseConfig()) return [];
+  const supabase = createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("election_facts")
+    .select("id, category, text, source")
+    .eq("display", true)
+    .order("created_at", { ascending: true });
+
+  if (error || !data) return [];
+  return data as Fact[];
 }
 
 export function getDirectoryStates(): DirectoryStateOption[] {

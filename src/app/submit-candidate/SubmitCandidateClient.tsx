@@ -8,7 +8,7 @@ import Link from "next/link";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SiteHeader } from "@/components/SiteHeader";
 import { getLgas } from "@/data/nigeria.js";
-import { submitCandidate } from "@/data/submissions.js";
+import { submitCandidateApplication } from "@/app/actions/submit-candidate";
 import type { CandidateSubmission, DirectoryStateOption, Party } from "@/types/domain";
 
 const initialForm = {
@@ -98,7 +98,7 @@ export function SubmitCandidatePage({
   const [validationError, setValidationError] = useState<string | null>(null);
   const localGovernments = form.state ? getLgas(form.state) : [];
   const submission = useMutation({
-    mutationFn: submitCandidate,
+    mutationFn: submitCandidateApplication,
     onSuccess: () => {
       setForm(initialForm);
       setValidationError(null);
@@ -146,8 +146,7 @@ export function SubmitCandidatePage({
     }
 
     setValidationError(null);
-    const { website, ...payload } = form;
-    submission.mutate(payload);
+    submission.mutate(form);
   }
 
 
