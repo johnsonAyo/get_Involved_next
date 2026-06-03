@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: "Get Involved | Know Your Candidates",
   description:
     "Search Nigerian candidates by office, party, state, and local government.",
+  icons: {
+    icon: "/icon.svg",
+  },
 };
 
 export default function RootLayout({
