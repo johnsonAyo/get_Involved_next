@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { DropdownSelect } from "@/components/DropdownSelect";
 import Link from "next/link";
 import type { Candidate } from "@/types/domain";
+import { formatPositionName } from "@/utils/formatters";
 
 /* ─── Shared candidate card (used in both views) ──────────────────────────── */
 function CandidateListItem({ candidate }: { candidate: Candidate }) {
@@ -27,7 +28,7 @@ function CandidateListItem({ candidate }: { candidate: Candidate }) {
       <div>
         <strong style={{ display: "block", fontSize: "0.95rem" }}>{candidate.candidateName}</strong>
         <span style={{ fontSize: "0.75rem", color: "var(--ds-color-ink-muted)" }}>
-          {candidate.position} {candidate.lga ? `· ${candidate.lga}` : ""}
+          {formatPositionName(candidate.position)} {candidate.lga ? `· ${candidate.lga}` : ""}
         </span>
       </div>
       {logoSrc ? (

@@ -10,6 +10,7 @@ import { Pagination } from "@/components/Pagination";
 import { nigeriaGeo, getLgas } from "@/data/nigeria.js";
 import { usePagination } from "@/hooks/usePagination";
 import type { Candidate } from "@/types/domain";
+import { formatPositionName } from "@/utils/formatters";
 
 const CANDIDATES_PER_PAGE = 12;
 
@@ -263,7 +264,7 @@ export function CandidatePage({
                       id="filter-position"
                       onChange={setSelectedPosition}
                       options={positions.map((position) => ({
-                        listLabel: position,
+                        listLabel: formatPositionName(position),
                         value: position,
                       }))}
                       placeholder="All Positions"

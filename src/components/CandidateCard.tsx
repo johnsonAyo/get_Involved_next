@@ -1,6 +1,7 @@
 import type { Candidate } from "../types/domain";
 import { getState } from "../data/nigeria.js";
 import Link from "next/link";
+import { formatPositionName } from "../utils/formatters";
 
 type Props = {
   candidate: Candidate;
@@ -45,7 +46,7 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
         />
       )}
       <div className="ds-candidate-card__number">{candidate.party}</div>
-      <div className="ds-candidate-card__status" style={{ backgroundColor: "rgba(0, 135, 83, 0.08)", color: "var(--ds-color-accent)", borderColor: "rgba(0, 135, 83, 0.2)" }}>{candidate.position}</div>
+      <div className="ds-candidate-card__status" style={{ backgroundColor: "rgba(0, 135, 83, 0.08)", color: "var(--ds-color-accent)", borderColor: "rgba(0, 135, 83, 0.2)" }}>{formatPositionName(candidate.position)}</div>
       <p className="ds-candidate-card__text" style={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}>
         {isExternalProfileLink ? (
           <a

@@ -1,4 +1,5 @@
 import type { Candidate, Fact } from "../types/domain";
+import { formatPositionName } from "../utils/formatters";
 
 type Props = {
   item: Candidate | Fact;
@@ -32,7 +33,7 @@ export function EvidenceCard({ item, tilt = "left", variant = "fact" }: Props) {
                 {isCandidate ? "Office" : "Source"}
               </div>
               <div className="ds-evidence-card__status-value">
-                {isCandidate ? candidate.position : fact.source}
+                {isCandidate ? formatPositionName(candidate.position) : fact.source}
               </div>
             </div>
           </header>
