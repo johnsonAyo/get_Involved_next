@@ -372,7 +372,10 @@ ul {
 }
 
 .ds-candidate-card__status {
+  align-self: flex-start;
+  display: inline-flex;
   width: fit-content;
+  max-width: 100%;
   padding: var(--ds-space-1) var(--ds-space-2);
   border: var(--ds-rule-thin) solid var(--ds-color-ink-muted);
   color: var(--ds-color-ink-muted);
@@ -431,8 +434,18 @@ ul {
     font-size: 0.9rem;
   }
 
+  .ds-candidate-card {
+    padding: 1.25rem 0.75rem 0.75rem;
+  }
+
   .ds-candidate-card__text {
     font-size: 1.05rem;
+  }
+
+  .ds-candidate-card__status {
+    font-size: 0.65rem;
+    letter-spacing: 0;
+    padding: var(--ds-space-1) 0.35rem;
   }
 }
 
