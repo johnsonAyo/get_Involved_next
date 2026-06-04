@@ -27,7 +27,7 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
 
   return (
     <li
-      className={`ds-candidate-card${variant === "home" ? " ds-candidate-card--home" : ""}`}
+      className={`ds-candidate-card${variant === "home" ? " ds-candidate-card--home" : ""}${candidate.profilePictureUrl ? " ds-candidate-card--has-bottom-logo" : ""}`}
       style={{ position: "relative" }}
     >
       {candidate.profilePictureUrl && (
