@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description:
     "Search Nigerian candidates by office, party, state, and local government.",
   icons: {
-    icon: "/icon.svg",
+    icon: "/assets/logo/nigeria-1758969_1280_4.png",
   },
 };
 

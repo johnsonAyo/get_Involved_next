@@ -775,6 +775,10 @@ html[data-theme="dark"] .ds-panel--ink {
   color: var(--ds-color-ink);
 }
 
+html[data-theme="dark"] .home-journey__cta .ds-inline-link {
+  color: #ffffff;
+}
+
 .candidates-filter-toprow {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
@@ -1434,9 +1438,13 @@ html[data-theme="dark"] .ds-panel--ink {
     padding: var(--ds-space-5) 0;
   }
 
+  .stats-marquee__list {
+    gap: var(--ds-space-3);
+  }
+
   .stats-marquee__item {
-    min-width: 14rem;
-    padding: 0 var(--ds-space-4);
+    min-width: 11rem;
+    padding: 0 var(--ds-space-3);
   }
 
   .stats-marquee__detail {
