@@ -14,7 +14,7 @@ import { nigeriaGeo } from "../data/nigeria.js";
 
 import type { Candidate, Fact } from "../types/domain";
 
-const CAROUSEL_DELAY_MS = 8000;
+const CAROUSEL_DELAY_MS = 60000;
 const MIN_SWIPE_DISTANCE = 50;
 
 type Props = {
@@ -209,7 +209,7 @@ export function HomePage({
           </div>
 
           <aside className="hero__right" aria-label="Nigeria election facts">
-            <p className="ds-eyebrow today-label">Nigeria · Election facts</p>
+            <p className="ds-eyebrow today-label">Nigeria · Important Election Details</p>
             {featuredFact && (
               <div
                 className="carousel"

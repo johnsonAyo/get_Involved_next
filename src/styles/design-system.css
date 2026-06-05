@@ -51,13 +51,33 @@ ul {
 }
 
 .ds-wordmark {
-  display: flex;
-  align-items: baseline;
+  display: inline-flex;
+  align-items: center;
   color: var(--ds-color-surface);
   font-family: var(--ds-font-display);
   font-weight: 700;
   letter-spacing: -0.04em;
-  line-height: 0.95;
+  line-height: 0.9;
+  gap: 0.75rem;
+}
+
+.ds-wordmark__logo {
+  height: 2.1em;
+  width: auto;
+  flex-shrink: 0;
+  display: block;
+}
+
+.ds-wordmark__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.ds-wordmark__number,
+.ds-wordmark__name {
+  display: flex;
+  flex-direction: column;
 }
 
 .ds-wordmark__number {
@@ -67,20 +87,27 @@ ul {
 .ds-wordmark__name {
   font-style: italic;
   font-weight: 600;
+  color: var(--ds-color-ink-soft);
 }
 
 .ds-wordmark--header {
-  gap: 0.35rem;
   color: var(--ds-color-ink);
-  font-size: 1.6rem;
+  font-size: 1.4rem; /* Slightly reduced so the stacked text doesn't overflow container heights */
   letter-spacing: -0.03em;
-  line-height: 1;
+}
+
+.ds-wordmark--header .ds-wordmark__name {
+  color: var(--ds-color-ink-soft);
 }
 
 .ds-wordmark--footer {
-  gap: 0.4rem;
-  font-size: var(--ds-space-8);
+  font-size: 1.75rem;
   color: inherit;
+}
+
+.ds-wordmark--footer .ds-wordmark__name {
+  color: inherit;
+  opacity: 0.8;
 }
 
 .ds-eyebrow,
@@ -415,7 +442,11 @@ ul {
 
 @media (max-width: 38.75rem) {
   .ds-wordmark--footer {
-    font-size: var(--ds-space-7);
+    font-size: 1.25rem;
+  }
+
+  .ds-wordmark--footer .ds-wordmark__text {
+    gap: 0.75rem;
   }
 
   .ds-evidence-card {

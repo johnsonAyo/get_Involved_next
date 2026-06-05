@@ -14,7 +14,7 @@ export function SiteHeader() {
         <Link aria-label="Will of the People home" href="/">
           <Wordmark className="ds-wordmark--header" />
         </Link>
-        
+
         <div className="site-header__right">
           <nav className={`site-header__nav ${isMenuOpen ? "site-header__nav--open" : ""}`} aria-label="Primary">
             <ul className="site-header__nav-list">
@@ -39,7 +39,8 @@ export function SiteHeader() {
                   className="ds-button ds-button--primary"
                   style={{
                     minHeight: "auto",
-                    padding: "0.5rem 1rem",
+                    minWidth: "auto",
+                    padding: "0.5rem 0.8rem",
                     fontSize: "0.85rem",
                     background: "var(--ds-color-accent)",
                     borderColor: "var(--ds-color-accent)",
@@ -47,7 +48,7 @@ export function SiteHeader() {
                     width: "fit-content",
                   }}
                 >
-                  Submit a Candidate
+                  Submit Candidate
                 </Link>
               </li>
               <li className="site-header__nav-report">
@@ -56,17 +57,18 @@ export function SiteHeader() {
                   className="ds-button ds-button--ghost"
                   style={{
                     minHeight: "auto",
-                    padding: "0.5rem 1rem",
+                    minWidth: "auto",
+                    padding: "0.5rem 0.8rem",
                     fontSize: "0.85rem",
                     width: "fit-content",
                   }}
                 >
-                  Report an Issue
+                  Report Issue
                 </Link>
               </li>
             </ul>
           </nav>
-          
+
           <div className="site-header__ctrls">
             <ThemeToggle />
             <button

@@ -14,73 +14,97 @@ export function EvidenceCard({ item, tilt = "left", variant = "fact" }: Props) {
   const detailsUrl = isCandidate ? `/candidates/${item.id}` : `/facts/${item.id}`;
   const candidateLinkUrl = isCandidate ? candidate.profileUrl || detailsUrl : detailsUrl;
   const isExternalProfileLink = Boolean(isCandidate && candidate.profileUrl);
+  const sources = candidate.source;
 
   return (
     <article className={`ds-evidence-card ds-evidence-card--tilt-${tilt}`}>
       <div className="ds-evidence-card__noise" aria-hidden="true" />
       <div className="ds-evidence-card__content">
-          <header className="ds-evidence-card__header">
-            <div>
+        <header className="ds-evidence-card__header">
+          <div>
+            {isCandidate && (
               <div className="ds-evidence-card__meta-label">
-                {isCandidate ? "Party" : "Topic"}
+                Party
               </div>
-              <div className="ds-evidence-card__number">
-                {isCandidate ? candidate.party : fact.category}
-              </div>
+            )}
+            <div className="ds-evidence-card__number">
+              {isCandidate ? candidate.party : fact.category}
             </div>
+          </div>
+          {isCandidate && (
             <div className="ds-evidence-card__status">
               <div className="ds-evidence-card__meta-label">
-                {isCandidate ? "Office" : "Source"}
+                Office
               </div>
               <div className="ds-evidence-card__status-value">
-                {isCandidate ? formatPositionName(candidate.position) : fact.source}
+                {formatPositionName(candidate.position)}
               </div>
             </div>
-          </header>
-          <div className="ds-evidence-card__divider" aria-hidden="true" />
-          <div className="ds-evidence-card__body">
-            <p className="ds-evidence-card__lede">
-              {isCandidate ? (
-                <a
-                  href={candidateLinkUrl}
-                  className="ds-evidence-card__inline-link"
-                  rel={isExternalProfileLink ? "noopener noreferrer" : undefined}
-                  target={isExternalProfileLink ? "_blank" : undefined}
-                >
-                  {candidate.candidateName}
-                </a>
-              ) : (
-                fact.text
-              )}
-            </p>
-            {isCandidate && candidate.viceCandidateName && (
-              <p className="ds-meta" style={{ marginTop: "0.5rem", opacity: 0.8 }}>
-                Running Mate:{" "}
-                <a href={detailsUrl} className="ds-evidence-card__inline-link">
-                  {candidate.viceCandidateName}
-                </a>
-              </p>
-            )}
-          </div>
-          <div className="ds-evidence-card__divider" aria-hidden="true" />
-          <footer className="ds-evidence-card__footer">
-            <p className="ds-evidence-card__citation">
-              <span aria-hidden="true">—</span>
-              <cite>
-                <a href={detailsUrl} className="ds-evidence-card__inline-link">
-                  {isCandidate
-                    ? candidate.stateName || candidate.state
-                    : "Will of the People"}
-                </a>
-              </cite>
-            </p>
-            <div className="ds-evidence-card__brand">
-              <a href={detailsUrl} className="ds-evidence-card__inline-link">
-                willofthepeople.ng
+          )}
+        </header>
+        <div className="ds-evidence-card__divider" aria-hidden="true" />
+        <div className="ds-evidence-card__body">
+          <p className="ds-evidence-card__lede">
+            {isCandidate ? (
+              <a
+                href={candidateLinkUrl}
+                className="ds-evidence-card__inline-link"
+                rel={isExternalProfileLink ? "noopener noreferrer" : undefined}
+                target={isExternalProfileLink ? "_blank" : undefined}
+              >
+                {candidate.candidateName}
               </a>
-            </div>
-          </footer>
+            ) : (
+              fact.text
+            )}
+          </p>
+          {isCandidate && candidate.viceCandidateName && (
+            <p className="ds-meta" style={{ marginTop: "0.5rem", opacity: 0.8 }}>
+              Running Mate:{" "}
+              <a href={detailsUrl} className="ds-evidence-card__inline-link">
+                {candidate.viceCandidateName}
+              </a>
+            </p>
+          )}
         </div>
-      </article>
+        <div className="ds-evidence-card__divider" aria-hidden="true" />
+        <footer className="ds-evidence-card__footer">
+          <p className="ds-evidence-card__citation">
+            <span aria-hidden="true">—</span>
+            <cite>
+              {isCandidate ? (
+                Array.isArray(sources) ? (
+                  sources.map((src, idx) => (
+                    <a
+                      key={idx}
+                      href={src}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ds-evidence-card__inline-link"
+                      style={{ marginRight: "0.5rem" }}
+                    >
+                      Source{sources.length > 1 ? ` ${idx + 1}` : ""}
+                    </a>
+                  ))
+                ) : sources ? (
+                  <a
+                    href={sources}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ds-evidence-card__inline-link"
+                  >
+                    Source
+                  </a>
+                ) : (
+                  candidate.stateName || candidate.state || "Will of the People"
+                )
+              ) : (
+                fact.source
+              )}
+            </cite>
+          </p>
+        </footer>
+      </div>
+    </article>
   );
 }

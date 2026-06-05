@@ -18,7 +18,7 @@
   height: 100vh;
 }
 
-.studio-shell > div {
+.studio-shell>div {
   height: 100%;
 }
 
@@ -892,7 +892,7 @@ html[data-theme="dark"] .ds-panel--ink {
   padding: var(--ds-space-10) var(--ds-space-7);
 }
 
-.manifesto > * {
+.manifesto>* {
   max-width: var(--ds-content);
   margin-right: auto;
   margin-left: auto;
@@ -1098,7 +1098,7 @@ html[data-theme="dark"] .ds-panel--ink {
   max-width: 46rem;
 }
 
-.about-prose__section + .about-prose__section {
+.about-prose__section+.about-prose__section {
   margin-top: var(--ds-space-7);
 }
 
@@ -1117,7 +1117,7 @@ html[data-theme="dark"] .ds-panel--ink {
   line-height: 1.75;
 }
 
-.about-prose__section p + p {
+.about-prose__section p+p {
   margin-top: var(--ds-space-4);
 }
 
@@ -1410,10 +1410,15 @@ html[data-theme="dark"] .ds-panel--ink {
     display: block !important;
   }
 }
+
 @media (max-width: 38.75rem) {
   .site-header__inner {
     padding-right: var(--ds-space-4);
     padding-left: var(--ds-space-4);
+  }
+
+  .site-header__theme-toggle {
+    --size: 32px;
   }
 
   .hero {
@@ -1520,9 +1525,13 @@ html[data-theme="dark"] .ds-panel--ink {
     font-size: var(--ds-space-6);
   }
 
-  .recent__grid,
+  .recent__grid {
+    grid-template-columns: 1fr;
+  }
+
   .site-footer__inner {
     grid-template-columns: 1fr;
+    padding: var(--ds-space-7) var(--ds-space-4) var(--ds-space-5);
   }
 
   .recent {
@@ -1563,16 +1572,10 @@ html[data-theme="dark"] .ds-panel--ink {
   }
 
   .site-footer__colophon {
-    flex-direction: column;
-    padding-top: 0;
-    border-top: 0;
+    display: none !important;
   }
 
-  .ds-wordmark {
-    flex-direction: column;
-    align-items: flex-start !important;
-    gap: 0 !important;
-  }
+
 
   /* Hide 'Know Your Candidates' in header on mobile */
   .ds-wordmark--header .ds-wordmark__name {
@@ -1608,6 +1611,7 @@ html[data-theme="dark"] .ds-panel--ink {
     background-color: var(--ds-color-ink);
     transition: background-color 0.2s ease;
   }
+
   .site-header__menu-icon::before,
   .site-header__menu-icon::after {
     content: "";
@@ -1618,9 +1622,11 @@ html[data-theme="dark"] .ds-panel--ink {
     background-color: var(--ds-color-ink);
     transition: transform 0.2s ease, top 0.2s ease;
   }
+
   .site-header__menu-icon::before {
     top: -6px;
   }
+
   .site-header__menu-icon::after {
     top: 6px;
   }
@@ -1628,10 +1634,12 @@ html[data-theme="dark"] .ds-panel--ink {
   .site-header__menu-icon--open {
     background-color: transparent !important;
   }
+
   .site-header__menu-icon--open::before {
     transform: rotate(45deg);
     top: 0 !important;
   }
+
   .site-header__menu-icon--open::after {
     transform: rotate(-45deg);
     top: 0 !important;
@@ -1668,7 +1676,7 @@ html[data-theme="dark"] .ds-panel--ink {
     flex-basis: auto !important;
     margin-top: 0.5rem;
   }
-  
+
   .site-header__nav-submit a,
   .site-header__nav-report a {
     width: 100% !important;
@@ -1771,8 +1779,15 @@ html[data-theme="dark"] .ds-panel--ink {
 }
 
 @keyframes accordionSlide {
-  from { opacity: 0; transform: translateY(-6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .states-accordion__body-header {
@@ -1886,9 +1901,9 @@ html[data-theme="dark"] .ds-panel--ink {
 
 /* ─── State Directory Candidate Hover Cards ────────────────────────────────── */
 .candidate-list-item-link {
-  transition: border-color var(--ds-motion-card) var(--ds-ease-standard), 
-              box-shadow var(--ds-motion-card) var(--ds-ease-standard),
-              transform var(--ds-motion-card) var(--ds-ease-standard);
+  transition: border-color var(--ds-motion-card) var(--ds-ease-standard),
+    box-shadow var(--ds-motion-card) var(--ds-ease-standard),
+    transform var(--ds-motion-card) var(--ds-ease-standard);
 }
 
 .candidate-list-item-link:hover {
