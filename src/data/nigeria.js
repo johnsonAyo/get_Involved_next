@@ -1131,9 +1131,57 @@ const stateSlogans = {
   fct: "Centre of Unity"
 };
 
+const statePopulations2006 = {
+  abia: 2845380,
+  adamawa: 3178950,
+  "akwa-ibom": 3902051,
+  anambra: 5177828,
+  bauchi: 4653066,
+  bayelsa: 1704515,
+  benue: 4253641,
+  borno: 4171104,
+  "cross-river": 2892988,
+  delta: 5112445,
+  ebonyi: 2176947,
+  edo: 3233366,
+  ekiti: 2398957,
+  enugu: 3267837,
+  fct: 1406239,
+  gombe: 2365040,
+  imo: 3927563,
+  jigawa: 4361002,
+  kaduna: 6113503,
+  kano: 9401288,
+  katsina: 5801584,
+  kebbi: 3256541,
+  kogi: 3314043,
+  kwara: 2365353,
+  lagos: 9113605,
+  nasarawa: 1869377,
+  niger: 3954772,
+  ogun: 3751140,
+  ondo: 3460877,
+  osun: 3416959,
+  oyo: 5580894,
+  plateau: 3206531,
+  rivers: 5198716,
+  sokoto: 3702676,
+  taraba: 2294800,
+  yobe: 2321339,
+  zamfara: 3278873
+};
+
 /** Flat sorted list of state names — useful for simple dropdowns. */
 export const stateNames = nigeriaGeo
-  .map((s) => ({ id: s.id, name: s.name, capital: s.capital, slogan: stateSlogans[s.id] || "", lgaCount: s.lgas.length }))
+  .map((s) => ({
+    id: s.id,
+    name: s.name,
+    capital: s.capital,
+    zone: s.zone,
+    population: statePopulations2006[s.id] || 0,
+    slogan: stateSlogans[s.id] || "",
+    lgaCount: s.lgas.length
+  }))
   .sort((a, b) => a.name.localeCompare(b.name));
 
 /**
@@ -1157,6 +1205,7 @@ export function getState(stateId) {
   return {
     ...state,
     slogan: stateSlogans[state.id] || "",
+    population: statePopulations2006[state.id] || 0,
     lgaCount: state.lgas.length
   };
 }

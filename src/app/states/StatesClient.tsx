@@ -1,10 +1,12 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useLayoutEffect } from "react";
+import { useRouter } from "next/navigation";
 import { stateNames, getLgas } from "@/data/nigeria.js";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { DropdownSelect } from "@/components/DropdownSelect";
+import { NigeriaStatesMap } from "@/components/NigeriaStatesMap";
 import Link from "next/link";
 import type { Candidate } from "@/types/domain";
 import { formatPositionName } from "@/utils/formatters";
@@ -14,7 +16,9 @@ function CandidateListItem({ candidate }: { candidate: Candidate }) {
   const logoSrc = candidate.logo;
 
   return (
-    <div
+    <Link
+      href={`/candidates/${candidate.id}`}
+      className="candidate-list-item-link"
       style={{
         padding: "1rem",
         border: "1px solid var(--ds-color-ink-a10)",
@@ -23,10 +27,13 @@ function CandidateListItem({ candidate }: { candidate: Candidate }) {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        textDecoration: "none",
+        color: "inherit",
+        cursor: "pointer",
       }}
     >
       <div>
-        <strong style={{ display: "block", fontSize: "0.95rem" }}>{candidate.candidateName}</strong>
+        <strong style={{ display: "block", fontSize: "0.95rem", color: "var(--ds-color-ink)" }}>{candidate.candidateName}</strong>
         <span style={{ fontSize: "0.75rem", color: "var(--ds-color-ink-muted)" }}>
           {formatPositionName(candidate.position)} {candidate.lga ? `· ${candidate.lga}` : ""}
         </span>
@@ -52,7 +59,7 @@ function CandidateListItem({ candidate }: { candidate: Candidate }) {
           {candidate.party}
         </span>
       )}
-    </div>
+    </Link>
   );
 }
 
@@ -61,6 +68,10 @@ type StateRecord = {
   id: string;
   capital: string;
   lgaCount: number;
+  zone: string;
+  name: string;
+  slogan: string;
+  population?: number;
 };
 
 type AccordionBodyProps = {
@@ -69,6 +80,7 @@ type AccordionBodyProps = {
   selectedLga: string;
   onLgaChange: (localGovernment: string) => void;
   candidates: Candidate[];
+  onSelectState: (stateId: string) => void;
 };
 
 function AccordionBody({
@@ -77,13 +89,75 @@ function AccordionBody({
   selectedLga,
   onLgaChange,
   candidates,
+  onSelectState,
 }: AccordionBodyProps) {
   return (
     <div className="states-accordion__body">
-      {/* Capital info box */}
-      <div className="states-accordion__info-box">
-        <span className="states-accordion__info-label">STATE CAPITAL</span>
-        <strong className="states-accordion__info-value">{stateObj.capital}</strong>
+      {/* Interactive Map on Mobile */}
+      <div
+        style={{
+          minWidth: 0,
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          marginBottom: "1.25rem",
+          background: "var(--ds-color-paper)",
+          border: "1px solid var(--ds-color-ink-a10)",
+          padding: "1rem",
+          borderRadius: "6px",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: "320px" }}>
+          <NigeriaStatesMap
+            activeStateId={stateObj.id}
+            className="states-directory__map-svg"
+            onSelectState={onSelectState}
+          />
+        </div>
+      </div>
+
+      {/* Pills */}
+      <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1rem" }}>
+        <span
+          style={{
+            fontFamily: "var(--ds-font-mono)",
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            color: "var(--ds-color-accent)",
+            border: "1px solid var(--ds-color-accent)",
+            padding: "0.2rem 0.5rem",
+            borderRadius: "4px",
+            background: "rgba(0, 135, 83, 0.04)",
+          }}
+        >
+          {stateObj.lgaCount} LGAs
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--ds-font-mono)",
+            fontSize: "0.7rem",
+            fontWeight: 700,
+            color: "var(--ds-color-accent)",
+            border: "1px solid var(--ds-color-accent)",
+            padding: "0.2rem 0.5rem",
+            borderRadius: "4px",
+            background: "rgba(0, 135, 83, 0.04)",
+          }}
+        >
+          {candidates.length} Listed Candidate{candidates.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {/* Capital and Zone info box */}
+      <div className="states-accordion__info-box" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div>
+          <span className="states-accordion__info-label">STATE CAPITAL</span>
+          <strong className="states-accordion__info-value">{stateObj.capital}</strong>
+        </div>
+        <div>
+          <span className="states-accordion__info-label">GEOPOLITICAL ZONE</span>
+          <strong className="states-accordion__info-value">{stateObj.zone}</strong>
+        </div>
       </div>
 
       {/* LGA filter */}
@@ -142,6 +216,7 @@ export function StatesPage({
   initialLga?: string;
   initialStateId?: string;
 }) {
+  const router = useRouter();
   const [selectedStateId, setSelectedStateId] = useState(initialStateId);
   const [selectedLga, setSelectedLga] = useState(initialLga);
 
@@ -154,9 +229,25 @@ export function StatesPage({
     const newPath = newQueryStr ? `/states?${newQueryStr}` : "/states";
 
     if (window.location.search !== (newQueryStr ? `?${newQueryStr}` : "")) {
-      window.history.replaceState({}, "", newPath);
+      router.replace(newPath, { scroll: false });
     }
-  }, [selectedStateId, selectedLga]);
+  }, [selectedStateId, selectedLga, router]);
+
+  useLayoutEffect(() => {
+    if (selectedStateId && typeof window !== "undefined") {
+      if (window.innerWidth <= 1024) {
+        const element = document.getElementById(`state-card-${selectedStateId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: "auto", block: "start" });
+        }
+      } else {
+        const element = document.getElementById("desktop-detail-column");
+        if (element) {
+          element.scrollTop = 0;
+        }
+      }
+    }
+  }, [selectedStateId]);
 
   const handleStateClick = (stateId: string) => {
     setSelectedStateId(stateId);
@@ -193,18 +284,17 @@ export function StatesPage({
             ]}
           />
           <header className="submit-page__intro" style={{ marginBottom: "2rem" }}>
-            <p className="ds-eyebrow ds-eyebrow--accent">State Directory</p>
-            <h1
+            <h3
               style={{
                 fontFamily: "var(--ds-font-display)",
-                fontSize: "clamp(2.5rem, 6vw, 4.5rem)",
+                fontSize: "clamp(2rem, 3vw, 3rem)",
                 fontWeight: 800,
                 letterSpacing: "-0.04em",
                 margin: "0.5rem 0",
               }}
             >
               Nigerian States &amp; Candidates
-            </h1>
+            </h3>
           </header>
 
           {/* ══ DESKTOP: two-column split-screen (untouched) ══════════════ */}
@@ -254,7 +344,17 @@ export function StatesPage({
                       if (!isActive) e.currentTarget.style.background = "transparent";
                     }}
                   >
-                    <span style={{ fontWeight: isActive ? 700 : 500 }}>{state.name}</span>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.15rem" }}>
+                      <span style={{ fontWeight: isActive ? 700 : 500, fontSize: "0.95rem" }}>{state.name}</span>
+                      <span
+                        style={{
+                          fontSize: "0.7rem",
+                          color: isActive ? "rgba(255, 255, 255, 0.8)" : "var(--ds-color-ink-muted)",
+                        }}
+                      >
+                        {state.zone}
+                      </span>
+                    </div>
                     <span
                       style={{
                         fontSize: "0.7rem",
@@ -274,6 +374,7 @@ export function StatesPage({
 
             {/* Right Detail Panel Column */}
             <div
+              id="desktop-detail-column"
               style={{
                 padding: "2.5rem 2rem",
                 overflowY: "auto",
@@ -286,75 +387,140 @@ export function StatesPage({
                 <div>
                   <div
                     style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: "1.5rem",
+                      display: "grid",
+                      gridTemplateColumns: "1.1fr 1fr",
+                      gap: "1.5rem",
+                      marginBottom: "2rem",
+                      background: "var(--ds-color-paper)",
+                      border: "1px solid var(--ds-color-ink-a10)",
+                      padding: "1.5rem",
+                      borderRadius: "6px",
+                      alignItems: "center",
                     }}
                   >
-                    <div>
-                      <h3
-                        style={{
-                          fontFamily: "var(--ds-font-display)",
-                          fontSize: "2.4rem",
-                          fontWeight: 800,
-                          margin: 0,
-                          letterSpacing: "-0.03em",
-                        }}
-                      >
-                        {selectedStateObj.name}
-                      </h3>
-                      <p
-                        style={{
-                          color: "var(--ds-color-ink-muted)",
-                          fontSize: "0.95rem",
-                          margin: "0.25rem 0 0 0",
-                          fontStyle: "italic",
-                        }}
-                      >
-                        "{selectedStateObj.slogan}"
-                      </p>
-                    </div>
+                    {/* Left: Interactive Map */}
                     <div
                       style={{
-                        fontFamily: "var(--ds-font-mono)",
-                        fontSize: "0.8rem",
-                        fontWeight: 700,
-                        color: "var(--ds-color-accent)",
-                        border: "1px solid var(--ds-color-accent)",
-                        padding: "0.3rem 0.75rem",
-                        borderRadius: "4px",
+                        minWidth: 0,
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
                       }}
                     >
-                      {selectedStateObj.lgaCount} LGAs
+                      <NigeriaStatesMap
+                        activeStateId={selectedStateId}
+                        className="states-directory__map-svg"
+                        onSelectState={(stateId) => {
+                          setSelectedStateId(stateId);
+                          setSelectedLga("");
+                        }}
+                      />
                     </div>
-                  </div>
 
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "1rem",
-                      marginBottom: "1.5rem",
-                      background: "var(--ds-color-paper)",
-                      padding: "1rem",
-                      border: "1px solid var(--ds-color-ink-a10)",
-                    }}
-                  >
-                    <div>
-                      <span
+                    {/* Right: State Details */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                      <div>
+                        <h3
+                          style={{
+                            fontFamily: "var(--ds-font-display)",
+                            fontSize: "2rem",
+                            fontWeight: 800,
+                            margin: 0,
+                            letterSpacing: "-0.03em",
+                            lineHeight: 1.1,
+                          }}
+                        >
+                          {selectedStateObj.name}
+                        </h3>
+                        {selectedStateObj.slogan && (
+                          <p
+                            style={{
+                              color: "var(--ds-color-ink-muted)",
+                              fontSize: "0.85rem",
+                              margin: "0.2rem 0 0 0",
+                              fontStyle: "italic",
+                            }}
+                          >
+                            "{selectedStateObj.slogan}"
+                          </p>
+                        )}
+                      </div>
+
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem" }}>
+                        <span
+                          style={{
+                            fontFamily: "var(--ds-font-mono)",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            color: "var(--ds-color-accent)",
+                            border: "1px solid var(--ds-color-accent)",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "4px",
+                            background: "rgba(0, 135, 83, 0.04)",
+                          }}
+                        >
+                          {selectedStateObj.lgaCount} LGAs
+                        </span>
+                        <span
+                          style={{
+                            fontFamily: "var(--ds-font-mono)",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            color: "var(--ds-color-accent)",
+                            border: "1px solid var(--ds-color-accent)",
+                            padding: "0.25rem 0.5rem",
+                            borderRadius: "4px",
+                            background: "rgba(0, 135, 83, 0.04)",
+                          }}
+                        >
+                          {selectedStateCandidates.length} Listed Candidate{selectedStateCandidates.length !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+
+                      <div
                         style={{
-                          color: "var(--ds-color-ink-muted)",
-                          display: "block",
-                          fontSize: "0.65rem",
-                          fontFamily: "var(--ds-font-mono)",
+                          display: "grid",
+                          gridTemplateColumns: "1fr 1fr",
+                          gap: "0.75rem",
+                          borderTop: "1px solid var(--ds-color-ink-a10)",
+                          paddingTop: "0.75rem",
                         }}
                       >
-                        STATE CAPITAL
-                      </span>
-                      <strong style={{ color: "var(--ds-color-ink)", fontSize: "1.1rem" }}>
-                        {selectedStateObj.capital}
-                      </strong>
+                        <div>
+                          <span
+                            style={{
+                              color: "var(--ds-color-ink-muted)",
+                              display: "block",
+                              fontSize: "0.6rem",
+                              fontFamily: "var(--ds-font-mono)",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            STATE CAPITAL
+                          </span>
+                          <strong style={{ color: "var(--ds-color-ink)", fontSize: "1rem" }}>
+                            {selectedStateObj.capital}
+                          </strong>
+                        </div>
+                        <div>
+                          <span
+                            style={{
+                              color: "var(--ds-color-ink-muted)",
+                              display: "block",
+                              fontSize: "0.6rem",
+                              fontFamily: "var(--ds-font-mono)",
+                              letterSpacing: "0.05em",
+                            }}
+                          >
+                            GEOPOLITICAL ZONE
+                          </span>
+                          <strong style={{ color: "var(--ds-color-ink)", fontSize: "1rem" }}>
+                            {selectedStateObj.zone}
+                          </strong>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
@@ -445,6 +611,7 @@ export function StatesPage({
               return (
                 <div
                   key={state.id}
+                  id={`state-card-${state.id}`}
                   className={`states-accordion__item${isOpen ? " states-accordion__item--open" : ""}`}
                 >
                   {/* Always-visible trigger row */}
@@ -470,6 +637,7 @@ export function StatesPage({
                       selectedLga={selectedLga}
                       onLgaChange={setSelectedLga}
                       candidates={stateCandidates}
+                      onSelectState={handleStateClick}
                     />
                   )}
                 </div>

@@ -39,6 +39,64 @@ export function CandidatePage({
   const [selectedStateId, setSelectedStateId] = useState(initialFilters?.state || "");
   const [selectedLga, setSelectedLga] = useState(initialFilters?.lga || "");
 
+  function resetSuggestedFilters() {
+    setSelectedParty("");
+    setSelectedPosition("");
+    setSelectedStateId("");
+    setSelectedLga("");
+  }
+
+  const suggestedFilters = [
+    {
+      label: "Presidential",
+      isActive: selectedPosition === "president",
+      onClick: () => {
+        resetSuggestedFilters();
+        setSelectedPosition("president");
+      },
+    },
+    {
+      label: "Governorship",
+      isActive: selectedPosition === "governor",
+      onClick: () => {
+        resetSuggestedFilters();
+        setSelectedPosition("governor");
+      },
+    },
+    {
+      label: "Senate",
+      isActive: selectedPosition === "senator",
+      onClick: () => {
+        resetSuggestedFilters();
+        setSelectedPosition("senator");
+      },
+    },
+    {
+      label: "House of Reps",
+      isActive: selectedPosition === "house-of-reps",
+      onClick: () => {
+        resetSuggestedFilters();
+        setSelectedPosition("house-of-reps");
+      },
+    },
+    {
+      label: "NDC",
+      isActive: selectedParty === "ndc",
+      onClick: () => {
+        resetSuggestedFilters();
+        setSelectedParty("ndc");
+      },
+    },
+    {
+      label: "Abuja",
+      isActive: selectedStateId === "fct",
+      onClick: () => {
+        resetSuggestedFilters();
+        setSelectedStateId("fct");
+      },
+    },
+  ];
+
   const isListMode = !candidateId;
   const candidate = isListMode
     ? null
@@ -158,17 +216,17 @@ export function CandidatePage({
             items={
               isListMode
                 ? [
-                    { href: "/", label: "Home" },
-                    { label: "Candidates" },
-                  ]
+                  { href: "/", label: "Home" },
+                  { label: "Candidates" },
+                ]
                 : [
-                    { href: "/", label: "Home" },
-                    {
-                      href: "/candidates",
-                      label: "Candidates",
-                    },
-                    { label: "Candidate Profile" },
-                  ]
+                  { href: "/", label: "Home" },
+                  {
+                    href: "/candidates",
+                    label: "Candidates",
+                  },
+                  { label: "Candidate Profile" },
+                ]
             }
           />
 
@@ -195,40 +253,67 @@ export function CandidatePage({
                 }}
                 onSubmit={(e) => e.preventDefault()}
               >
-                <div className="search-filter__field search-filter__field--full">
-                  <label
-                    className="ds-eyebrow search-filter__label"
-                    htmlFor="filter-query"
-                  >
-                    <span className="ds-desktop-only">Candidate, running mate, or party</span>
-                    <span className="ds-mobile-only">Candidate/Party</span>
-                  </label>
-                  <div className="search-filter__input-wrap">
-                    <svg
-                      aria-hidden="true"
-                      className="search-filter__icon"
-                      fill="none"
-                      height="18"
-                      stroke="currentColor"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      viewBox="0 0 24 24"
-                      width="18"
-                      xmlns="http://www.w3.org/2000/svg"
+                <div className="candidates-filter-toprow">
+                  <div className="search-filter__field candidates-filter-toprow__search">
+                    <label
+                      className="ds-eyebrow search-filter__label"
+                      htmlFor="filter-query"
                     >
-                      <circle cx="11" cy="11" r="8" />
-                      <line x1="21" x2="16.65" y1="21" y2="16.65" />
-                    </svg>
-                    <input
-                      autoComplete="off"
-                      className="search-filter__input"
-                      id="filter-query"
-                      placeholder="Search name"
-                      type="search"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
+                      <span className="ds-desktop-only">Name or party</span>
+                      <span className="ds-mobile-only">Name/Party</span>
+                    </label>
+                    <div className="search-filter__input-wrap">
+                      <svg
+                        aria-hidden="true"
+                        className="search-filter__icon"
+                        fill="none"
+                        height="18"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        width="18"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" x2="16.65" y1="21" y2="16.65" />
+                      </svg>
+                      <input
+                        autoComplete="off"
+                        className="search-filter__input"
+                        id="filter-query"
+                        placeholder="Search"
+                        type="search"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    className="candidates-filter-toprow__suggestions"
+                    aria-label="Suggested filters"
+                  >
+                    <p className="ds-eyebrow ds-eyebrow--accent candidates-filter-toprow__label">
+                      Suggested filters
+                    </p>
+                    <div className="candidates-filter-toprow__chips">
+                      {suggestedFilters.map((filter) => (
+                        <button
+                          key={filter.label}
+                          type="button"
+                          className={`candidates-filter-toprow__chip${
+                            filter.isActive
+                              ? " candidates-filter-toprow__chip--active"
+                              : ""
+                          }`}
+                          onClick={filter.onClick}
+                        >
+                          {filter.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
@@ -313,7 +398,7 @@ export function CandidatePage({
                       placeholder={
                         selectedStateId
                           ? "All Local Governments"
-                          : "Select a state first"
+                          : "Select a state"
                       }
                       value={selectedLga}
                     />
@@ -325,27 +410,27 @@ export function CandidatePage({
                   selectedPosition ||
                   selectedStateId ||
                   selectedLga) && (
-                  <button
-                    type="button"
-                    className="ds-button ds-button--ghost"
-                    style={{
-                      width: "fit-content",
-                      minHeight: "2.5rem",
-                      padding: "0.5rem 1rem",
-                      fontSize: "0.85rem",
-                      marginTop: "0.5rem",
-                    }}
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSelectedParty("");
-                      setSelectedPosition("");
-                      setSelectedStateId("");
-                      setSelectedLga("");
-                    }}
-                  >
-                    ← Clear All Filters
-                  </button>
-                )}
+                    <button
+                      type="button"
+                      className="ds-button ds-button--ghost"
+                      style={{
+                        width: "fit-content",
+                        minHeight: "2.5rem",
+                        padding: "0.5rem 1rem",
+                        fontSize: "0.85rem",
+                        marginTop: "0.5rem",
+                      }}
+                      onClick={() => {
+                        setSearchQuery("");
+                        setSelectedParty("");
+                        setSelectedPosition("");
+                        setSelectedStateId("");
+                        setSelectedLga("");
+                      }}
+                    >
+                      ← Clear All Filters
+                    </button>
+                  )}
               </form>
 
               {matchedCandidates.length > 0 ? (

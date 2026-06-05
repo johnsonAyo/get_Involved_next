@@ -17,9 +17,9 @@ export function AboutPage() {
             ]}
           />
 
-          <h1 className="about-page__title">About Know Your Candidate</h1>
+          <h1 className="about-page__title">Get Involved</h1>
           <p className="about-page__lede">
-            A public candidate directory built for Nigeria&apos;s elections.{" "}
+            Get Involved is a public directory of who is contesting in Nigerian elections. We help citizens discover candidates and make informed choices before they vote.{" "}
             <strong>Search by name, state, local government, office, and party</strong>{" "}
             to see who is contesting and where they appear on the ballot.
           </p>
@@ -182,8 +182,7 @@ export function AboutPage() {
               <section className="about-prose__section" id="corrections">
                 <h2>Corrections</h2>
                 <p>
-                  If a profile is inaccurate, outdated, duplicated, or placed in
-                  the wrong race, use the{" "}
+                  If a profile is inaccurate, outdated or duplicated use the{" "}
                   <Link
                     className="ds-inline-link"
                     href="/report"

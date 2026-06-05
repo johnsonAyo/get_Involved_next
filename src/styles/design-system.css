@@ -80,6 +80,7 @@ ul {
 .ds-wordmark--footer {
   gap: 0.4rem;
   font-size: var(--ds-space-8);
+  color: inherit;
 }
 
 .ds-eyebrow,

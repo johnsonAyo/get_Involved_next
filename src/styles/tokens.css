@@ -93,4 +93,24 @@
   --ds-motion-card: 360ms;
   --ds-ease-standard: ease;
   --ds-noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+  --ds-color-night: #0b1320;
+  --ds-color-night-soft: #101a2a;
+  --ds-color-night-elevated: #162234;
+}
+
+html[data-theme="dark"] {
+  --ds-color-ink: #edf3fb;
+  --ds-color-ink-soft: #cbd7e7;
+  --ds-color-ink-muted: #8e9db5;
+  --ds-color-meta: #71819a;
+  --ds-color-paper: #0b1320;
+  --ds-color-surface: #101a2a;
+  --ds-color-accent: #17945a;
+  --ds-color-accent-ink: #f3fbf7;
+  --ds-color-ink-a10: rgba(237, 243, 251, 0.1);
+  --ds-color-ink-a12: rgba(237, 243, 251, 0.12);
+  --ds-color-ink-a50: rgba(237, 243, 251, 0.5);
+  --ds-color-ink-a60: rgba(237, 243, 251, 0.6);
+  --ds-color-paper-a88: rgba(11, 19, 32, 0.88);
+  --ds-shadow-evidence: 1.25rem 1.25rem 3.75rem rgba(0, 0, 0, 0.38);
 }

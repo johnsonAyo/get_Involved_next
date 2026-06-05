@@ -11,12 +11,29 @@ export const metadata: Metadata = {
   },
 };
 
+const themeInitScript = `
+  (function () {
+    try {
+      var stored = localStorage.getItem("theme");
+      var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.colorScheme = theme;
+    } catch (error) {}
+  })();
+`;
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html
+      lang="en"
+      data-scroll-behavior="smooth"
+      data-theme="light"
+      suppressHydrationWarning
+    >
       <body>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         <Providers>{children}</Providers>
       </body>
     </html>

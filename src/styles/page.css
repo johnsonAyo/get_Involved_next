@@ -67,6 +67,7 @@
 .site-header__nav-list {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: var(--ds-space-3) var(--ds-space-5);
 }
 
@@ -78,8 +79,8 @@
 .site-header__nav a {
   position: relative;
   display: block;
-  padding: var(--ds-space-1) 0;
-  font-size: 0.9rem;
+  padding: var(--ds-space-2) 0;
+  font-size: 1rem;
   letter-spacing: 0.02em;
   line-height: 1.5;
 }
@@ -102,44 +103,89 @@
   transform-origin: bottom left;
 }
 
-.editorial-band {
-  margin-top: var(--ds-space-1);
-  border-top: var(--ds-rule-accent) solid var(--ds-color-accent);
-  border-bottom: var(--ds-rule-thin) solid var(--ds-color-inverse-a12);
-  background: var(--ds-color-ink);
-  color: var(--ds-color-surface);
-}
-
-.editorial-band__link {
-  display: grid;
-  max-width: var(--ds-frame);
-  min-height: 4.5rem;
-  align-items: center;
-  grid-template-columns: auto 1fr auto;
-  gap: var(--ds-space-6);
-  margin: 0 auto;
-  padding: var(--ds-space-4) var(--ds-space-7);
-}
-
-.editorial-band__headline {
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.005em;
-  line-height: 1.3;
-}
-
-.editorial-band__headline em {
-  color: var(--ds-color-accent);
-  font-style: normal;
-}
-
-.editorial-band__cta {
+.site-header__right {
   display: flex;
-  min-height: 2.5rem;
   align-items: center;
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: -0.005em;
+  gap: var(--ds-space-5);
+}
+
+.site-header__ctrls {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-space-3);
+}
+
+.site-header__menu-toggle {
+  display: none;
+}
+
+.site-header__theme-toggle {
+  --size: 56px;
+  --toggle-fill: var(--ds-color-surface);
+  --toggle-accent: var(--ds-color-night-soft);
+  display: inline-flex;
+  align-items: center;
+}
+
+.site-header__theme-toggle input[type="checkbox"] {
+  -webkit-appearance: none;
+  width: var(--size);
+  height: calc(var(--size) / 2);
+  background-color: var(--toggle-fill);
+  border: 2px solid var(--ds-color-ink);
+  border-radius: 30px 100px 100px 100px;
+  box-shadow: 0 0.35rem 1rem var(--ds-color-ink-a10);
+  outline: none;
+  cursor: pointer;
+  position: relative;
+}
+
+.site-header__theme-toggle input[type="checkbox"]::before {
+  content: "";
+  position: absolute;
+  width: calc(var(--size) / 2);
+  height: calc(var(--size) / 2);
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) scale(0.7);
+  border: 2px solid var(--ds-color-ink);
+  border-radius: 30px 100px 100px 100px;
+  background-color: var(--toggle-accent);
+  box-sizing: border-box;
+}
+
+.site-header__theme-toggle--ready input[type="checkbox"],
+.site-header__theme-toggle--ready input[type="checkbox"]::before {
+  transition: all 0.5s;
+}
+
+.site-header__theme-toggle input[type="checkbox"]:focus-visible {
+  box-shadow:
+    0 0.35rem 1rem var(--ds-color-ink-a10),
+    0 0 0 3px rgba(0, 135, 83, 0.16);
+}
+
+.site-header__theme-toggle input[type="checkbox"]:checked {
+  background-color: var(--toggle-accent);
+  border-radius: 100px 100px 30px 100px;
+}
+
+.site-header__theme-toggle input[type="checkbox"]:checked::before {
+  left: 50%;
+  background-color: var(--toggle-fill);
+  border-radius: 100px 100px 30px 100px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hero {
@@ -149,7 +195,8 @@
   grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   gap: var(--ds-space-9);
   margin: 0 auto;
-  padding: var(--ds-space-10) var(--ds-space-7);
+  min-height: calc(100vh - 3.8125rem - 9rem);
+  padding: var(--ds-space-5) var(--ds-space-7) var(--ds-space-5);
 }
 
 .hero__left,
@@ -249,9 +296,557 @@
   background: var(--ds-color-ink-a60);
 }
 
+.stats-marquee {
+  position: relative;
+  overflow: hidden;
+  margin-top: calc(var(--ds-space-8) * -1);
+  padding: 0 0 var(--ds-space-6);
+}
+
+.stats-marquee__inner {
+  width: 100%;
+  padding: var(--ds-space-4) 0;
+  border-top: var(--ds-rule-thick) solid var(--ds-color-ink);
+  border-bottom: var(--ds-rule-thin) solid var(--ds-color-ink);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(244, 245, 245, 0.96)),
+    radial-gradient(circle at top left, rgba(0, 135, 83, 0.12), transparent 20rem);
+}
+
+.stats-marquee__viewport {
+  position: relative;
+  overflow: hidden;
+  mask-image: linear-gradient(90deg, transparent, black 6%, black 94%, transparent);
+}
+
+.stats-marquee__track {
+  display: flex;
+  width: max-content;
+  animation: stats-marquee-scroll 68s linear infinite;
+}
+
+.stats-marquee__list {
+  display: flex;
+  gap: var(--ds-space-7);
+  padding: 0 var(--ds-space-5);
+}
+
+.stats-marquee__item {
+  position: relative;
+  display: grid;
+  min-width: clamp(16rem, 20vw, 20rem);
+  gap: 0.25rem;
+  padding: 0 var(--ds-space-6);
+}
+
+.stats-marquee__item::after {
+  content: "";
+  position: absolute;
+  top: 0.4rem;
+  right: 0;
+  width: 1px;
+  height: calc(100% - 0.8rem);
+  background: var(--ds-color-ink-a10);
+}
+
+.stats-marquee__label,
+.stats-marquee__detail {
+  display: block;
+}
+
+.stats-marquee__label {
+  color: var(--ds-color-ink-muted);
+  font-family: var(--ds-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+.stats-marquee__value {
+  color: var(--ds-color-ink);
+  font-family: var(--ds-font-display);
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+
+.stats-marquee__detail {
+  color: var(--ds-color-ink-soft);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.stats-marquee__list .stats-marquee__item:last-child::after {
+  top: 50%;
+  right: calc(var(--ds-space-3) * -1);
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--ds-color-accent);
+  transform: translateY(-50%);
+}
+
+.stats-marquee__viewport:hover .stats-marquee__track {
+  animation-play-state: paused;
+}
+
+@keyframes stats-marquee-scroll {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.home-explore {
+  padding: var(--ds-space-10) var(--ds-space-7) var(--ds-space-8);
+}
+
+.home-explore__inner {
+  display: grid;
+  max-width: var(--ds-frame);
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(17rem, 0.75fr);
+  gap: var(--ds-space-6);
+  margin: 0 auto;
+}
+
+.home-explore__left {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ds-space-4);
+}
+
+.home-explore__title {
+  font-family: var(--ds-font-display);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.home-explore__lede {
+  max-width: 25rem;
+  color: var(--ds-color-ink-soft);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.home-explore__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-space-3);
+  margin-top: var(--ds-space-2);
+}
+
+.home-explore__map {
+  min-width: 0;
+  padding: var(--ds-space-6);
+  border: var(--ds-rule-thin) solid var(--ds-color-ink);
+  border-top: var(--ds-rule-accent) solid var(--ds-color-accent);
+  background:
+    radial-gradient(circle at top left, rgba(0, 135, 83, 0.12), transparent 18rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(244, 245, 245, 0.98));
+  box-shadow: 0 1rem 2.5rem var(--ds-color-ink-a10);
+}
+
+.home-explore__right {
+  min-width: 0;
+}
+
+.home-explore__top {
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-6) var(--ds-space-5);
+  border: var(--ds-rule-thin) solid var(--ds-color-ink);
+  background: var(--ds-color-paper);
+}
+
+.home-explore__top-list {
+  display: grid;
+  gap: var(--ds-space-2);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.home-explore__top-item {
+  border-top: var(--ds-rule-thin) solid var(--ds-color-ink-a10);
+}
+
+.home-explore__top-link {
+  display: grid;
+  align-items: center;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3) 0;
+}
+
+.home-explore__top-rank {
+  color: var(--ds-color-accent);
+  font-family: var(--ds-font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.home-explore__top-name {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.home-explore__top-count {
+  color: var(--ds-color-ink-soft);
+  font-family: var(--ds-font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.home-explore__empty {
+  color: var(--ds-color-ink-soft);
+  line-height: 1.65;
+}
+
+.nigeria-states-map,
+.home-explore__map-svg {
+  display: flex;
+  flex-direction: column;
+}
+
+.nigeria-states-map {
+  gap: var(--ds-space-4);
+}
+
+.nigeria-states-map__svg {
+  width: 100%;
+  height: auto;
+}
+
+.nigeria-states-map__state {
+  fill: rgba(255, 255, 255, 0.92);
+  stroke: var(--ds-color-ink);
+  stroke-width: 1.5;
+  cursor: pointer;
+  transition:
+    fill var(--ds-motion-fast) var(--ds-ease-standard),
+    transform var(--ds-motion-fast) var(--ds-ease-standard),
+    stroke var(--ds-motion-fast) var(--ds-ease-standard);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.nigeria-states-map__state:hover,
+.nigeria-states-map__state:focus,
+.nigeria-states-map__state:focus-visible,
+.nigeria-states-map__state--focused {
+  fill: rgba(0, 135, 83, 0.18);
+  stroke: var(--ds-color-accent);
+  outline: none !important;
+  transform: translateY(-1px);
+}
+
+.nigeria-states-map__state--selected,
+.nigeria-states-map__state--selected:hover,
+.nigeria-states-map__state--selected:focus,
+.nigeria-states-map__state--selected:focus-visible {
+  fill: var(--ds-color-accent) !important;
+  stroke: var(--ds-color-accent-ink) !important;
+}
+
+.nigeria-states-map__feedback {
+  color: var(--ds-color-ink-muted);
+  letter-spacing: 0.12em;
+}
+
+.home-journey {
+  padding: var(--ds-space-9) var(--ds-space-7) var(--ds-space-8);
+}
+
+.home-journey__inner {
+  max-width: var(--ds-frame);
+  margin: 0 auto;
+}
+
+.home-journey__intro {
+  max-width: 42rem;
+}
+
+.home-journey__title {
+  margin-top: var(--ds-space-2);
+  font-family: var(--ds-font-display);
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.home-journey__lede {
+  margin-top: var(--ds-space-4);
+  color: var(--ds-color-ink-soft);
+  font-size: 1.08rem;
+  line-height: 1.7;
+}
+
+.home-journey__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--ds-space-5);
+  margin-top: var(--ds-space-7);
+}
+
+.home-journey__card {
+  padding: var(--ds-space-6) var(--ds-space-5);
+  border: var(--ds-rule-thin) solid var(--ds-color-ink);
+  border-top: var(--ds-rule-accent) solid var(--ds-color-accent);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(244, 245, 245, 0.98)),
+    radial-gradient(circle at top right, rgba(0, 135, 83, 0.08), transparent 14rem);
+}
+
+.home-journey__card-kicker {
+  color: var(--ds-color-accent);
+}
+
+.home-journey__card-title {
+  margin-top: var(--ds-space-3);
+  font-family: var(--ds-font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.home-journey__card-body {
+  margin-top: var(--ds-space-3);
+  color: var(--ds-color-ink-soft);
+  line-height: 1.7;
+}
+
+.home-journey__rail {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(18rem, 0.75fr);
+  gap: var(--ds-space-6);
+  margin-top: var(--ds-space-7);
+}
+
+.home-journey__steps {
+  padding: var(--ds-space-6);
+  border: var(--ds-rule-thin) solid var(--ds-color-ink);
+  background: var(--ds-color-paper);
+}
+
+.home-journey__steps-list {
+  display: grid;
+  gap: var(--ds-space-4);
+  margin: var(--ds-space-5) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-journey__step {
+  display: grid;
+  align-items: center;
+  grid-template-columns: auto 1fr;
+  gap: var(--ds-space-4);
+  padding-top: var(--ds-space-4);
+  border-top: var(--ds-rule-thin) solid var(--ds-color-ink-a10);
+}
+
+.home-journey__step:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.home-journey__step-number {
+  display: flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: var(--ds-rule-thin) solid var(--ds-color-ink);
+  border-radius: 999px;
+  color: var(--ds-color-accent);
+  font-family: var(--ds-font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.home-journey__step-title {
+  font-family: var(--ds-font-display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.home-journey__step-body {
+  margin-top: var(--ds-space-2);
+  color: var(--ds-color-ink-soft);
+  line-height: 1.65;
+}
+
+.home-journey__cta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--ds-space-4);
+  padding: var(--ds-space-6);
+  background: var(--ds-color-ink-soft);
+  color: var(--ds-color-surface);
+}
+
+.home-journey__cta-body {
+  font-family: var(--ds-font-display);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.home-journey__cta .ds-inline-link {
+  width: fit-content;
+  color: var(--ds-color-surface);
+  border-bottom-color: var(--ds-color-accent);
+}
+
+.home-journey__cta-note {
+  color: var(--ds-color-inverse-a70);
+  line-height: 1.6;
+}
+
+html[data-theme="dark"] .site-header {
+  background: var(--ds-color-paper-a88);
+}
+
+html[data-theme="dark"] .stats-marquee__inner {
+  background:
+    linear-gradient(180deg, rgba(16, 26, 42, 0.96), rgba(11, 19, 32, 0.98)),
+    radial-gradient(circle at top left, rgba(33, 185, 113, 0.12), transparent 20rem);
+}
+
+html[data-theme="dark"] .home-explore__map,
+html[data-theme="dark"] .home-journey__card,
+html[data-theme="dark"] .home-explore__top,
+html[data-theme="dark"] .home-journey__steps,
+html[data-theme="dark"] .about-summary,
+html[data-theme="dark"] .submit-success-view {
+  background:
+    linear-gradient(180deg, rgba(16, 26, 42, 0.96), rgba(11, 19, 32, 0.98)),
+    radial-gradient(circle at top left, rgba(33, 185, 113, 0.08), transparent 18rem);
+}
+
+html[data-theme="dark"] .about-page {
+  background:
+    radial-gradient(circle at top right, rgba(33, 185, 113, 0.12), transparent 24rem),
+    linear-gradient(180deg, rgba(11, 19, 32, 0.94), rgba(16, 26, 42, 0.98));
+}
+
+html[data-theme="dark"] .nigeria-states-map__state {
+  fill: rgba(255, 255, 255, 0.05);
+  stroke: rgba(237, 243, 251, 0.42);
+}
+
+html[data-theme="dark"] .nigeria-states-map__state:hover,
+html[data-theme="dark"] .nigeria-states-map__state:focus-visible,
+html[data-theme="dark"] .nigeria-states-map__state--focused {
+  fill: rgba(33, 185, 113, 0.2);
+  stroke: var(--ds-color-accent);
+}
+
+html[data-theme="dark"] .nigeria-states-map__state--selected {
+  fill: var(--ds-color-accent);
+  stroke: var(--ds-color-accent-ink);
+}
+
+html[data-theme="dark"] .home-journey__cta,
+html[data-theme="dark"] .site-footer,
+html[data-theme="dark"] .ds-panel--ink {
+  background: var(--ds-color-night-soft);
+  color: var(--ds-color-ink);
+}
+
+.candidates-filter-toprow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3fr);
+  gap: var(--ds-space-4);
+  align-items: end;
+  justify-content: space-between;
+}
+
+.candidates-filter-toprow__search,
+.candidates-filter-toprow__suggestions {
+  min-width: 0;
+}
+
+.candidates-filter-toprow__suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-2);
+  align-items: flex-end;
+}
+
+.candidates-filter-toprow__label {
+  margin-bottom: 0;
+}
+
+.candidates-filter-toprow__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--ds-space-2);
+}
+
+.candidates-filter-toprow__chip {
+  display: inline-flex;
+  min-height: 3.5rem;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  border: var(--ds-rule-thin) solid var(--ds-color-ink);
+  background: var(--ds-color-paper);
+  color: var(--ds-color-ink);
+  font-family: var(--ds-font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background var(--ds-motion-fast) var(--ds-ease-standard),
+    border-color var(--ds-motion-fast) var(--ds-ease-standard),
+    transform var(--ds-motion-fast) var(--ds-ease-standard);
+}
+
+.candidates-filter-toprow__chip:hover,
+.candidates-filter-toprow__chip:focus-visible {
+  border-color: var(--ds-color-accent);
+  background: rgba(0, 135, 83, 0.08);
+  outline: none;
+}
+
+.candidates-filter-toprow__chip--active {
+  border-color: var(--ds-color-accent);
+  background: var(--ds-color-accent);
+  color: var(--ds-color-accent-ink);
+}
+
+.candidates-filter-toprow__chip--active:hover,
+.candidates-filter-toprow__chip--active:focus-visible {
+  background: var(--ds-color-accent);
+  color: var(--ds-color-accent-ink);
+  opacity: 0.9;
+}
+
 .recent {
-  padding: var(--ds-space-10) var(--ds-space-7);
-  border-top: var(--ds-rule-medium) solid var(--ds-color-ink);
+  padding: calc(var(--ds-space-10) + var(--ds-space-4)) var(--ds-space-7) var(--ds-space-10);
   background: var(--ds-color-paper);
 }
 
@@ -738,23 +1333,55 @@
 }
 
 @media (max-width: 64rem) {
-  .site-header__inner,
-  .editorial-band__link {
+  .site-header__inner {
     padding-right: var(--ds-space-6);
     padding-left: var(--ds-space-6);
   }
 
   .hero {
+    min-height: auto;
     grid-template-columns: 1fr;
     gap: var(--ds-space-8);
-    padding: var(--ds-space-8) var(--ds-space-6) var(--ds-space-9);
+    padding: var(--ds-space-7) var(--ds-space-6) var(--ds-space-9);
+  }
+
+  .home-explore {
+    padding: var(--ds-space-9) var(--ds-space-6) var(--ds-space-7);
+  }
+
+  .home-explore__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .candidates-filter-toprow {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .home-explore__map,
+  .home-explore__top {
+    padding: var(--ds-space-5);
+  }
+
+  .home-journey {
+    padding: var(--ds-space-8) var(--ds-space-6) var(--ds-space-7);
+  }
+
+  .home-journey__grid,
+  .home-journey__rail {
+    grid-template-columns: 1fr;
   }
 
   .recent,
   .manifesto,
   .about-page,
-  .submit-page__inner {
+  .submit-page__inner,
+  .stats-marquee {
     padding: var(--ds-space-9) var(--ds-space-6);
+  }
+
+  .recent {
+    padding-top: calc(var(--ds-space-9) + var(--ds-space-3));
   }
 
   .recent__grid {
@@ -789,25 +1416,67 @@
     padding-left: var(--ds-space-4);
   }
 
-  .editorial-band__link {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--ds-space-2);
-    padding: var(--ds-space-4) var(--ds-space-4);
-  }
-
-  .editorial-band__headline {
-    font-size: 1.1rem;
-    line-height: 1.4;
-  }
-
-  .editorial-band__cta {
-    display: none !important;
-  }
-
   .hero {
-    padding: var(--ds-space-6) var(--ds-space-4) var(--ds-space-8);
+    padding: var(--ds-space-5) var(--ds-space-4) var(--ds-space-8);
+  }
+
+  .stats-marquee {
+    margin-top: 0;
+    padding: 0 0 var(--ds-space-8);
+  }
+
+  .stats-marquee__inner {
+    padding: var(--ds-space-5) 0;
+  }
+
+  .stats-marquee__item {
+    min-width: 14rem;
+    padding: 0 var(--ds-space-4);
+  }
+
+  .stats-marquee__detail {
+    font-size: 0.85rem;
+  }
+
+  .home-explore {
+    padding: var(--ds-space-8) var(--ds-space-4) var(--ds-space-6);
+  }
+
+  .home-explore__title {
+    font-size: 2rem;
+  }
+
+  .candidates-filter-toprow__suggestions {
+    display: none;
+  }
+
+  .candidates-filter-toprow__chip {
+    min-height: 3.1rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.82rem;
+  }
+
+  .home-explore__map,
+  .home-explore__top {
+    padding: var(--ds-space-4);
+  }
+
+  .home-journey {
+    padding: var(--ds-space-7) var(--ds-space-4) var(--ds-space-6);
+  }
+
+  .home-journey__card,
+  .home-journey__steps,
+  .home-journey__cta {
+    padding: var(--ds-space-5) var(--ds-space-4);
+  }
+
+  .home-journey__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-journey__cta-body {
+    font-size: 1.65rem;
   }
 
   .about-page {
@@ -854,6 +1523,10 @@
   .recent__grid,
   .site-footer__inner {
     grid-template-columns: 1fr;
+  }
+
+  .recent {
+    padding-top: calc(var(--ds-space-8) + var(--ds-space-2));
   }
 
   .manifesto__body {
@@ -912,15 +1585,95 @@
     padding-right: 4.5rem;
   }
 
-  /* Hide About and Report an Issue on mobile nav */
-  .site-header__nav-about,
-  .site-header__nav-report {
-    display: none !important;
+  .site-header__right {
+    gap: var(--ds-space-3);
   }
 
-  /* Push Submit onto its own line below Search + States */
+  .site-header__menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--ds-color-ink);
+  }
+
+  .site-header__menu-icon {
+    position: relative;
+    display: block;
+    width: 1.25rem;
+    height: 2px;
+    background-color: var(--ds-color-ink);
+    transition: background-color 0.2s ease;
+  }
+  .site-header__menu-icon::before,
+  .site-header__menu-icon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--ds-color-ink);
+    transition: transform 0.2s ease, top 0.2s ease;
+  }
+  .site-header__menu-icon::before {
+    top: -6px;
+  }
+  .site-header__menu-icon::after {
+    top: 6px;
+  }
+
+  .site-header__menu-icon--open {
+    background-color: transparent !important;
+  }
+  .site-header__menu-icon--open::before {
+    transform: rotate(45deg);
+    top: 0 !important;
+  }
+  .site-header__menu-icon--open::after {
+    transform: rotate(-45deg);
+    top: 0 !important;
+  }
+
+  .site-header__nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--ds-color-paper);
+    border-bottom: var(--ds-rule-thin) solid var(--ds-color-ink-a10);
+    padding: 1rem var(--ds-space-4) 1.5rem;
+    box-shadow: 0 0.75rem 1.5rem var(--ds-color-ink-a10);
+    z-index: 10;
+  }
+
+  .site-header__nav--open {
+    display: block !important;
+  }
+
+  .site-header__nav-list {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 1rem !important;
+  }
+
+  .site-header__nav-report {
+    display: block !important;
+  }
+
   .site-header__nav-submit {
-    flex-basis: 100%;
+    flex-basis: auto !important;
+    margin-top: 0.5rem;
+  }
+  
+  .site-header__nav-submit a,
+  .site-header__nav-report a {
+    width: 100% !important;
+    text-align: center;
+    justify-content: center;
   }
 
   /* States page — hide desktop grid, show mobile accordion */
@@ -932,6 +1685,12 @@
     display: block !important;
   }
 
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats-marquee__track {
+    animation: none;
+  }
 }
 
 /* ─── States Accordion ──────────────────────────────────────────────────────────────── */
@@ -1123,4 +1882,21 @@
     width: 3.5rem;
     height: 3.5rem;
   }
+}
+
+/* ─── State Directory Candidate Hover Cards ────────────────────────────────── */
+.candidate-list-item-link {
+  transition: border-color var(--ds-motion-card) var(--ds-ease-standard), 
+              box-shadow var(--ds-motion-card) var(--ds-ease-standard),
+              transform var(--ds-motion-card) var(--ds-ease-standard);
+}
+
+.candidate-list-item-link:hover {
+  border-color: var(--ds-color-ink) !important;
+  box-shadow: 0 4px 12px var(--ds-color-ink-a10);
+  transform: translateY(-2px);
+}
+
+.states-directory__map-svg .nigeria-states-map__feedback {
+  display: none !important;
 }

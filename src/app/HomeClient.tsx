@@ -1,13 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { EvidenceCard } from "../components/EvidenceCard";
+import { NigeriaStatesMap } from "../components/NigeriaStatesMap";
 import { SafeCandidateCard } from "../components/SafeCandidateCard";
 import { SearchFilter } from "../components/SearchFilter";
 import { SiteHeader } from "../components/SiteHeader";
 import { SiteFooter } from "../components/SiteFooter";
 import { useCarouselIndex } from "../hooks/useCarouselIndex";
+import { nigeriaGeo } from "../data/nigeria.js";
 
 import type { Candidate, Fact } from "../types/domain";
 
@@ -27,6 +30,7 @@ export function HomePage({
   initialLga = "",
   initialStateId = "",
 }: Props) {
+  const router = useRouter();
   const { index: featuredIndex, setIndex: setFeaturedIndex } = useCarouselIndex({
     delayMs: CAROUSEL_DELAY_MS,
     length: facts.length,
@@ -104,35 +108,73 @@ export function HomePage({
     ...assembly,
   ];
 
+  const totalStates = nigeriaGeo.filter((state) => state.id !== "fct").length;
+  const totalLgas = nigeriaGeo.reduce((sum, state) => sum + state.lgas.length, 0);
+  const totalZones = new Set(
+    nigeriaGeo
+      .map((state) => state.zone)
+      .filter((zone): zone is string => Boolean(zone?.trim())),
+  ).size;
+  const statsMarqueeItems = [
+    {
+      label: "States",
+      value: totalStates.toString(),
+      detail: "Across the federation",
+    },
+    {
+      label: "LGAs",
+      value: totalLgas.toString(),
+      detail: "Local governments",
+    },
+    {
+      label: "Senate seats",
+      value: "109",
+      detail: "National Assembly",
+    },
+    {
+      label: "House of Reps seats",
+      value: "360",
+      detail: "Federal constituencies",
+    },
+    {
+      label: "Geopolitical zones",
+      value: totalZones.toString(),
+      detail: "Regional divisions",
+    },
+  ];
+  const topStates = useMemo(() => {
+    const stateNames = new Map(nigeriaGeo.map((state) => [state.id, state.name]));
+    const counts = new Map<string, number>();
+
+    for (const candidate of candidates) {
+      const stateId = candidate.stateId?.toLowerCase();
+      if (!stateId || !stateNames.has(stateId)) continue;
+      counts.set(stateId, (counts.get(stateId) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .map(([stateId, count]) => ({
+        count,
+        label: stateNames.get(stateId) ?? stateId,
+        stateId,
+      }))
+      .sort((a, b) => (b.count !== a.count ? b.count - a.count : a.label.localeCompare(b.label)))
+      .slice(0, 5);
+  }, [candidates]);
+
   return (
     <>
       <SiteHeader />
 
       <main id="main-content">
-        <aside className="editorial-band" aria-label="Election cycle notice">
-          <Link className="editorial-band__link" href="/candidates">
-            <span className="ds-eyebrow ds-eyebrow--accent">
-              36 states · 774 local governments
-            </span>
-            <span className="editorial-band__headline">
-              Search any name. See <em>who is contesting</em> and{" "}
-              <em>under which party.</em>
-            </span>
-            <span className="editorial-band__cta">Start searching →</span>
-          </Link>
-        </aside>
-
         <section className="hero">
           <div className="hero__left">
-            <p className="ds-eyebrow">
-              House of Representatives 360 seats · Senate 109 seats
-            </p>
             <h1 className="hero__title">
               <span>Get Involved</span>
               <span className="hero__title-emphasis">Know Your Candidates</span>
             </h1>
             <p className="hero__lede">
-              Search any candidate name. Select your state and local government.
+              Find any candidate. Select a state and local government.
               See every party contesting and{" "}
               <strong>exactly who is on the ballot.</strong>
             </p>
@@ -205,6 +247,188 @@ export function HomePage({
               </div>
             )}
           </aside>
+        </section>
+
+        <section
+          className="stats-marquee"
+          aria-label="Nigeria election statistics"
+        >
+          <div className="stats-marquee__inner">
+            <div className="stats-marquee__viewport">
+              <div className="stats-marquee__track">
+                {[0, 1].map((duplicateIndex) => (
+                  <ul
+                    aria-hidden={duplicateIndex === 1}
+                    className="stats-marquee__list"
+                    key={duplicateIndex}
+                  >
+                    {statsMarqueeItems.map((item) => (
+                      <li className="stats-marquee__item" key={`${duplicateIndex}-${item.label}`}>
+                        <span className="stats-marquee__label">{item.label}</span>
+                        <strong className="stats-marquee__value">{item.value}</strong>
+                        <span className="stats-marquee__detail">{item.detail}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="home-explore" aria-label="Explore candidates by state">
+          <div className="home-explore__inner">
+            <div className="home-explore__left">
+              <p className="ds-eyebrow ds-eyebrow--accent">Explore Nigeria</p>
+              <h2 className="home-explore__title">Explore candidates by state</h2>
+              <p className="home-explore__lede">
+                Browse the map, open any state, and quickly see who is contesting
+                in your part of the country.
+              </p>
+              <div className="home-explore__actions">
+                <Link className="ds-button ds-button--primary" href="/states">
+                  Explore all states →
+                </Link>
+              </div>
+            </div>
+
+            <div className="home-explore__map" aria-label="Nigeria map">
+              <NigeriaStatesMap
+                className="home-explore__map-svg"
+                onSelectState={(stateId) => router.push(`/states?state=${stateId}`)}
+              />
+            </div>
+
+            <aside className="home-explore__right" aria-label="Top states by candidates">
+              <div className="home-explore__top">
+                <p className="ds-eyebrow ds-eyebrow--accent">Top states by candidates</p>
+                {topStates.length > 0 ? (
+                  <ol className="home-explore__top-list" start={1}>
+                    {topStates.map((item, index) => (
+                      <li key={item.stateId} className="home-explore__top-item">
+                        <Link
+                          className="home-explore__top-link"
+                          href={`/states?state=${item.stateId}`}
+                        >
+                          <span aria-hidden="true" className="home-explore__top-rank">
+                            {String(index + 1).padStart(2, "0")}
+                          </span>
+                          <span className="home-explore__top-name">{item.label}</span>
+                          <span className="home-explore__top-count">
+                            {item.count.toLocaleString("en-NG")}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="home-explore__empty">
+                    State totals will appear here as candidate records are added.
+                  </p>
+                )}
+                <Link className="ds-inline-link" href="/states">
+                  View all states →
+                </Link>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section className="home-journey" aria-labelledby="home-journey-heading">
+          <div className="home-journey__inner">
+            <div className="home-journey__intro">
+              <p className="ds-eyebrow ds-eyebrow--accent">
+                Everything you need to stay informed
+              </p>
+              <h2 className="home-journey__title" id="home-journey-heading">
+                Know who is running.
+              </h2>
+              <p className="home-journey__lede">
+                Search for candidates, confirm the information with public
+                sources, and help keep the directory accurate when something is
+                missing or wrong.
+              </p>
+            </div>
+
+            <div className="home-journey__grid">
+              <article className="home-journey__card">
+                <p className="ds-eyebrow home-journey__card-kicker">Search candidates</p>
+                <h3 className="home-journey__card-title">Find who is on the ballot</h3>
+                <p className="home-journey__card-body">
+                  Search candidates by name, office, party, state, or local
+                  government to quickly locate the records that matter to you.
+                </p>
+              </article>
+
+              <article className="home-journey__card">
+                <p className="ds-eyebrow home-journey__card-kicker">Verify information</p>
+                <h3 className="home-journey__card-title">Check the sources yourself</h3>
+                <p className="home-journey__card-body">
+                  Open candidate profiles and follow source links from public
+                  records, so every important claim can be checked directly.
+                </p>
+              </article>
+
+              <article className="home-journey__card">
+                <p className="ds-eyebrow home-journey__card-kicker">Get involved</p>
+                <h3 className="home-journey__card-title">Help improve the directory</h3>
+                <p className="home-journey__card-body">
+                  Submit corrections, share missing information, and contribute to
+                  a stronger public record for everyone using the platform.
+                </p>
+              </article>
+            </div>
+
+            <div className="home-journey__rail">
+              <div className="home-journey__steps">
+                <p className="ds-eyebrow ds-eyebrow--accent">How it works</p>
+                <ol className="home-journey__steps-list">
+                  <li className="home-journey__step">
+                    <span className="home-journey__step-number">1</span>
+                    <div>
+                      <h3 className="home-journey__step-title">Search</h3>
+                      <p className="home-journey__step-body">
+                        Search for any candidate by name, office, party, or location.
+                      </p>
+                    </div>
+                  </li>
+                  <li className="home-journey__step">
+                    <span className="home-journey__step-number">2</span>
+                    <div>
+                      <h3 className="home-journey__step-title">Explore</h3>
+                      <p className="home-journey__step-body">
+                        Open profiles, compare details, and follow citations to public
+                        sources.
+                      </p>
+                    </div>
+                  </li>
+                  <li className="home-journey__step">
+                    <span className="home-journey__step-number">3</span>
+                    <div>
+                      <h3 className="home-journey__step-title">Decide</h3>
+                      <p className="home-journey__step-body">
+                        Use verified information to make informed decisions and vote
+                        wisely.
+                      </p>
+                    </div>
+                  </li>
+                </ol>
+              </div>
+
+              <aside className="home-journey__cta">
+                <p className="ds-eyebrow ds-eyebrow--accent">Your vote. Your future.</p>
+                <p className="home-journey__cta-body">
+                  Get informed, verify sources, and help improve the directory.
+                </p>
+                <Link className="ds-inline-link" href="/submit-candidate">
+                  Get involved today →
+                </Link>
+                <p className="home-journey__cta-note">
+                  Join thousands of citizens taking action.
+                </p>
+              </aside>
+            </div>
+          </div>
         </section>
 
         <section className="recent" aria-labelledby="deck-heading">

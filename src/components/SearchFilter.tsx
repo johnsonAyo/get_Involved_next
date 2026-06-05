@@ -110,7 +110,7 @@ export function SearchFilter({
               listLabel: localGovernment,
               value: localGovernment,
             }))}
-            placeholder={stateId ? "All local governments" : "Select a state first"}
+            placeholder={stateId ? "All local governments" : "Select a state"}
             value={lga}
           />
         </div>
