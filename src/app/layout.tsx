@@ -15,7 +15,7 @@ const themeInitScript = `
   (function () {
     try {
       var stored = localStorage.getItem("theme");
-      var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      var theme = stored || "light";
       document.documentElement.dataset.theme = theme;
       document.documentElement.style.colorScheme = theme;
     } catch (error) {}

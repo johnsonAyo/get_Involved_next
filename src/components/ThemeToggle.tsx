@@ -14,9 +14,7 @@ function getPreferredTheme(): ThemeMode {
     return stored;
   }
 
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
+  return "light";
 }
 
 function applyTheme(theme: ThemeMode) {
