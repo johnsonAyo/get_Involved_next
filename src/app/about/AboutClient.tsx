@@ -17,7 +17,7 @@ export function AboutPage() {
             ]}
           />
 
-          <h1 className="about-page__title">Get Involved</h1>
+          <h1 className="ds-page-title about-page__title">Get Involved</h1>
           <p className="about-page__lede">
             Get Involved is a public directory of who is contesting in Nigerian elections. We help citizens discover candidates and make informed choices before they vote.{" "}
             <strong>Search by name, state, local government, office, and party</strong>{" "}

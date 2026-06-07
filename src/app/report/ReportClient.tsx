@@ -80,7 +80,7 @@ export function ReportPage() {
             ]}
           />
           <header className="submit-page__intro">
-            <h1>Report an issue</h1>
+            <h1 className="ds-page-title">Report an issue</h1>
             <p>
               Tell us about a problem, error, or concern. Provide a concise
               title, a short description, and a public source we can verify.

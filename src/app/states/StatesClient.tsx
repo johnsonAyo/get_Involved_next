@@ -284,17 +284,9 @@ export function StatesPage({
             ]}
           />
           <header className="submit-page__intro" style={{ marginBottom: "2rem" }}>
-            <h3
-              style={{
-                fontFamily: "var(--ds-font-display)",
-                fontSize: "clamp(2rem, 3vw, 3rem)",
-                fontWeight: 800,
-                letterSpacing: "-0.04em",
-                margin: "0.5rem 0",
-              }}
-            >
+            <h1 className="ds-page-title" style={{ margin: "0.5rem 0" }}>
               Nigerian States &amp; Candidates
-            </h3>
+            </h1>
           </header>
 
           {/* ══ DESKTOP: two-column split-screen (untouched) ══════════════ */}

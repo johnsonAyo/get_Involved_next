@@ -164,7 +164,7 @@ export function SubmitCandidatePage({
             ]}
           />
           <header className="submit-page__intro">
-            <h1>Submit a candidate</h1>
+            <h1 className="ds-page-title">Submit a candidate</h1>
             <p>
               Add a candidate to the public record. Choose the person, the office,
               their state and local government, then attach a public source we can

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -38,6 +39,15 @@ function getCandidateInitials(name: string): string {
   return `${first}${last}`.toUpperCase() || "C";
 }
 
+function getCandidateNameFontSize(name: string): string {
+  const length = name.trim().length;
+
+  if (length > 54) return "1.05rem";
+  if (length > 42) return "1.15rem";
+  if (length > 30) return "1.3rem";
+  return "1.55rem";
+}
+
 function getCandidateLocation(candidate: Candidate): string {
   const stateFromId = candidate.stateId
     ? (getState(candidate.stateId.toLowerCase()) as { name: string } | undefined)
@@ -53,6 +63,9 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
   const location = getCandidateLocation(candidate);
   const partyName = candidate.partyFullName || candidate.party || "Not listed";
   const initials = getCandidateInitials(candidate.candidateName);
+  const candidateNameStyle = {
+    "--candidate-profile-name-size": getCandidateNameFontSize(candidate.candidateName),
+  } as CSSProperties;
 
   return (
     <article className="candidate-profile" aria-labelledby="candidate-profile-title">
@@ -63,6 +76,10 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
           { label: candidate.candidateName },
         ]}
       />
+
+      <h1 className="ds-page-title candidate-profile__page-title" id="candidate-profile-title">
+        Profile
+      </h1>
 
       <div className="candidate-profile__grid">
         <div className="candidate-profile__sidebar">
@@ -83,7 +100,9 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
               </div>
 
               <div className="candidate-profile__heading">
-                <h1 id="candidate-profile-title">{candidate.candidateName}</h1>
+                <h2 className="candidate-profile__name" style={candidateNameStyle}>
+                  {candidate.candidateName}
+                </h2>
                 <div className="candidate-profile__top-facts" aria-label="Candidate summary">
                   <div>
                     <p className="ds-eyebrow">Position</p>
@@ -97,19 +116,19 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
                 {location ? (
                   <p className="candidate-profile__subtitle">{location}</p>
                 ) : null}
-                <div className="candidate-profile__party-card">
-                  <p className="ds-eyebrow">Current party</p>
-                  {candidate.logo ? (
-                    <img
-                      alt={`${partyName} logo`}
-                      className="candidate-profile__party-logo"
-                      src={candidate.logo}
-                    />
-                  ) : null}
-                  <div className="candidate-profile__party-name">
-                    <span>{partyName}</span>
-                  </div>
-                </div>
+              </div>
+            </div>
+
+            <div className="candidate-profile__party-card">
+              {candidate.logo ? (
+                <img
+                  alt={`${partyName} logo`}
+                  className="candidate-profile__party-logo"
+                  src={candidate.logo}
+                />
+              ) : null}
+              <div className="candidate-profile__party-name">
+                <span>{partyName}</span>
               </div>
             </div>
 
@@ -117,12 +136,11 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
 
           <section className="candidate-profile__trust-card">
             <ul className="candidate-profile__trust-list" aria-label="Profile verification standards">
-              <li>Public sources only</li>
-              <li>Citations on every profile</li>
+              <li>Public sources</li>
               <li>Corrections published in full</li>
             </ul>
             <Link
-              className="ds-button ds-button--primary candidate-profile__action"
+              className="candidate-profile__action"
               href={`/report?candidate=${encodeURIComponent(candidate.id)}`}
             >
               Request a correction
@@ -408,13 +426,7 @@ export function CandidatePage({
 
           {isListMode ? (
             <div style={{ marginTop: "1rem" }}>
-              <h1
-                style={{
-                  marginBottom: "2rem",
-                  fontFamily: "var(--ds-font-display)",
-                  fontSize: "clamp(1.75rem, 5vw, 2.5rem)",
-                }}
-              >
+              <h1 className="ds-page-title" style={{ marginBottom: "2rem" }}>
                 Candidates &amp; Parties
               </h1>
 
@@ -479,11 +491,10 @@ export function CandidatePage({
                         <button
                           key={filter.label}
                           type="button"
-                          className={`candidates-filter-toprow__chip${
-                            filter.isActive
+                          className={`candidates-filter-toprow__chip${filter.isActive
                               ? " candidates-filter-toprow__chip--active"
                               : ""
-                          }`}
+                            }`}
                           onClick={filter.onClick}
                         >
                           {filter.label}

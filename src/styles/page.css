@@ -997,11 +997,6 @@ html[data-theme="dark"] .home-journey__cta .ds-inline-link {
 
 .about-page__title {
   max-width: 48rem;
-  font-family: var(--ds-font-display);
-  font-size: clamp(2.75rem, 6vw, 4.9rem);
-  font-weight: 700;
-  letter-spacing: -0.045em;
-  line-height: 0.98;
 }
 
 .about-page__lede {
@@ -1219,16 +1214,10 @@ html[data-theme="dark"] .home-journey__cta .ds-inline-link {
   margin-bottom: var(--ds-space-4);
 }
 
-.submit-page__intro h1,
 .submit-page__guidance h2 {
   font-family: var(--ds-font-display);
   font-weight: 700;
   letter-spacing: -0.04em;
-}
-
-.submit-page__intro h1 {
-  font-size: 3.5rem;
-  line-height: 1;
 }
 
 .submit-page__intro p {
@@ -1565,10 +1554,6 @@ html[data-theme="dark"] .home-journey__cta .ds-inline-link {
 
   .states-page__inner {
     padding-top: var(--ds-space-5);
-  }
-
-  .submit-page__intro h1 {
-    font-size: 2.7rem;
   }
 
   .submit-page__intro p {
