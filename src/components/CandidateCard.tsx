@@ -1,6 +1,10 @@
+"use client";
+
 import type { Candidate } from "../types/domain";
+import type { KeyboardEvent, MouseEvent } from "react";
 import { getState } from "../data/nigeria.js";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatPositionName } from "../utils/formatters";
 
 type Props = {
@@ -9,9 +13,8 @@ type Props = {
 };
 
 export function CandidateCard({ candidate, variant = "default" }: Props) {
+  const router = useRouter();
   const detailsUrl = `/candidates/${candidate.id}`;
-  const candidateLinkUrl = candidate.profileUrl || detailsUrl;
-  const isExternalProfileLink = Boolean(candidate.profileUrl);
 
   const logoSrc = candidate.logo;
   const sources = Array.isArray(candidate.source)
@@ -26,10 +29,30 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
     ? (stateObj.lgas.find((l) => l.toLowerCase() === candidate.lga!.toLowerCase()) || candidate.lga)
     : (candidate.lga || "");
 
+  function openProfile() {
+    router.push(detailsUrl);
+  }
+
+  function handleCardClick(event: MouseEvent<HTMLLIElement>) {
+    if ((event.target as HTMLElement).closest("a, button")) return;
+    openProfile();
+  }
+
+  function handleCardKeyDown(event: KeyboardEvent<HTMLLIElement>) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    if ((event.target as HTMLElement).closest("a, button")) return;
+    event.preventDefault();
+    openProfile();
+  }
+
   return (
     <li
       className={`ds-candidate-card${variant === "home" ? " ds-candidate-card--home" : ""}${candidate.profilePictureUrl ? " ds-candidate-card--has-bottom-logo" : ""}`}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
+      role="link"
       style={{ position: "relative" }}
+      tabIndex={0}
     >
       {candidate.profilePictureUrl && (
         <img 
@@ -48,20 +71,9 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
       <div className="ds-candidate-card__number">{candidate.party}</div>
       <div className="ds-candidate-card__status" style={{ backgroundColor: "rgba(0, 135, 83, 0.08)", color: "var(--ds-color-accent)", borderColor: "rgba(0, 135, 83, 0.2)" }}>{formatPositionName(candidate.position)}</div>
       <p className="ds-candidate-card__text" style={{ marginTop: "0.5rem", marginBottom: "0.5rem" }}>
-        {isExternalProfileLink ? (
-          <a
-            href={candidateLinkUrl}
-            className="ds-candidate-card__inline-link"
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            {candidate.candidateName}
-          </a>
-        ) : (
-          <Link href={candidateLinkUrl} className="ds-candidate-card__inline-link">
-            {candidate.candidateName}
-          </Link>
-        )}
+        <Link href={detailsUrl} className="ds-candidate-card__inline-link">
+          {candidate.candidateName}
+        </Link>
         {candidate.viceCandidateName && (
           <span style={{ display: "block", fontSize: "0.85em", opacity: 0.75, marginTop: "0.25rem" }}>
             Running Mate:{" "}

@@ -324,8 +324,14 @@ ul {
   flex-direction: column;
   gap: var(--ds-space-3);
   padding: 2.25rem var(--ds-space-6) var(--ds-space-6);
+  cursor: pointer;
   user-select: text;
   -webkit-user-select: text;
+}
+
+.ds-candidate-card:focus-visible {
+  outline: var(--ds-rule-medium) solid var(--ds-color-accent);
+  outline-offset: 0.25rem;
 }
 
 .ds-candidate-card__logo {

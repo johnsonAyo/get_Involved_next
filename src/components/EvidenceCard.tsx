@@ -1,4 +1,5 @@
 import type { Candidate, Fact } from "../types/domain";
+import Link from "next/link";
 import { formatPositionName } from "../utils/formatters";
 
 type Props = {
@@ -12,8 +13,6 @@ export function EvidenceCard({ item, tilt = "left", variant = "fact" }: Props) {
   const candidate = item as Candidate;
   const fact = item as Fact;
   const detailsUrl = isCandidate ? `/candidates/${item.id}` : `/facts/${item.id}`;
-  const candidateLinkUrl = isCandidate ? candidate.profileUrl || detailsUrl : detailsUrl;
-  const isExternalProfileLink = Boolean(isCandidate && candidate.profileUrl);
   const sources = candidate.source;
 
   return (
@@ -46,14 +45,12 @@ export function EvidenceCard({ item, tilt = "left", variant = "fact" }: Props) {
         <div className="ds-evidence-card__body">
           <p className="ds-evidence-card__lede">
             {isCandidate ? (
-              <a
-                href={candidateLinkUrl}
+              <Link
+                href={detailsUrl}
                 className="ds-evidence-card__inline-link"
-                rel={isExternalProfileLink ? "noopener noreferrer" : undefined}
-                target={isExternalProfileLink ? "_blank" : undefined}
               >
                 {candidate.candidateName}
-              </a>
+              </Link>
             ) : (
               fact.text
             )}
@@ -61,9 +58,9 @@ export function EvidenceCard({ item, tilt = "left", variant = "fact" }: Props) {
           {isCandidate && candidate.viceCandidateName && (
             <p className="ds-meta" style={{ marginTop: "0.5rem", opacity: 0.8 }}>
               Running Mate:{" "}
-              <a href={detailsUrl} className="ds-evidence-card__inline-link">
+              <Link href={detailsUrl} className="ds-evidence-card__inline-link">
                 {candidate.viceCandidateName}
-              </a>
+              </Link>
             </p>
           )}
         </div>
