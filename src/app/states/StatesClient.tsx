@@ -11,9 +11,83 @@ import Link from "next/link";
 import type { Candidate } from "@/types/domain";
 import { formatPositionName } from "@/utils/formatters";
 
+function isGovernorshipPosition(position?: string): boolean {
+  const normalized = position?.toLowerCase() || "";
+  return normalized === "governor" || normalized === "governorship";
+}
+
+function getPositionSortOrder(position?: string): number {
+  if (isGovernorshipPosition(position)) return 0;
+
+  const normalized = position?.toLowerCase() || "";
+  if (normalized === "deputy-governor" || normalized === "deputy governor") return 1;
+  if (normalized === "senator") return 2;
+  if (normalized === "house-of-reps" || normalized === "house of representatives") return 3;
+  if (normalized === "state-house-of-assembly" || normalized === "state house of assembly") return 4;
+  return 10;
+}
+
+function sortCandidates(candidates: Candidate[]): Candidate[] {
+  return [...candidates].sort((a, b) => {
+    const positionOrder = getPositionSortOrder(a.position) - getPositionSortOrder(b.position);
+    if (positionOrder !== 0) return positionOrder;
+
+    return (a.candidateName || "").localeCompare(b.candidateName || "");
+  });
+}
+
+function getStateCandidates(candidates: Candidate[], stateId: string): Candidate[] {
+  return sortCandidates(
+    candidates.filter((candidate) => candidate.stateId?.toLowerCase() === stateId.toLowerCase()),
+  );
+}
+
+function filterStateCandidates(
+  candidates: Candidate[],
+  filters: { lga: string; party: string; position: string },
+): Candidate[] {
+  return sortCandidates(
+    candidates.filter((candidate) => {
+      const matchesLga = !filters.lga || candidate.lga?.toLowerCase() === filters.lga.toLowerCase();
+      const matchesParty = !filters.party || candidate.partyId === filters.party;
+      const matchesPosition = !filters.position || candidate.position === filters.position;
+
+      return matchesLga && matchesParty && matchesPosition;
+    }),
+  );
+}
+
+function getPartyOptions(candidates: Candidate[]) {
+  return Array.from(
+    new Map(
+      candidates
+        .filter((candidate) => candidate.partyId && candidate.party)
+        .map((candidate) => [
+          candidate.partyId!,
+          {
+            listLabel: candidate.partyFullName
+              ? `${candidate.partyFullName} (${candidate.party})`
+              : candidate.party,
+            value: candidate.partyId!,
+          },
+        ]),
+    ).values(),
+  ).sort((a, b) => a.listLabel.localeCompare(b.listLabel));
+}
+
+function getPositionOptions(candidates: Candidate[]) {
+  return Array.from(new Set(candidates.map((candidate) => candidate.position).filter(Boolean)))
+    .sort((a, b) => getPositionSortOrder(a) - getPositionSortOrder(b) || formatPositionName(a).localeCompare(formatPositionName(b)))
+    .map((position) => ({
+      listLabel: formatPositionName(position),
+      value: position,
+    }));
+}
+
 /* ─── Shared candidate card (used in both views) ──────────────────────────── */
 function CandidateListItem({ candidate }: { candidate: Candidate }) {
   const logoSrc = candidate.logo;
+  const profilePictureSrc = candidate.profilePictureUrl;
 
   return (
     <Link
@@ -38,7 +112,22 @@ function CandidateListItem({ candidate }: { candidate: Candidate }) {
           {formatPositionName(candidate.position)} {candidate.lga ? `· ${candidate.lga}` : ""}
         </span>
       </div>
-      {logoSrc ? (
+      {profilePictureSrc ? (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.65rem", flexShrink: 0 }}>
+          <img
+            src={profilePictureSrc}
+            alt={`${candidate.candidateName} profile picture`}
+            style={{ width: "2.75rem", height: "2.75rem", objectFit: "cover", objectPosition: "center top", borderRadius: "999px" }}
+          />
+          {logoSrc ? (
+            <img
+              src={logoSrc}
+              alt={`${candidate.party} logo`}
+              style={{ width: candidate.partyId === "ndc" ? "3.25rem" : "2.25rem", height: candidate.partyId === "ndc" ? "3.25rem" : "2.25rem", objectFit: "contain", borderRadius: "4px" }}
+            />
+          ) : null}
+        </div>
+      ) : logoSrc ? (
         <img
           src={logoSrc}
           alt={`${candidate.party} logo`}
@@ -78,7 +167,12 @@ type AccordionBodyProps = {
   stateObj: StateRecord;
   lgas: string[];
   selectedLga: string;
+  selectedParty: string;
+  selectedPosition: string;
   onLgaChange: (localGovernment: string) => void;
+  onPartyChange: (party: string) => void;
+  onPositionChange: (position: string) => void;
+  allCandidates: Candidate[];
   candidates: Candidate[];
   onSelectState: (stateId: string) => void;
 };
@@ -87,10 +181,18 @@ function AccordionBody({
   stateObj,
   lgas,
   selectedLga,
+  selectedParty,
+  selectedPosition,
   onLgaChange,
+  onPartyChange,
+  onPositionChange,
+  allCandidates,
   candidates,
   onSelectState,
 }: AccordionBodyProps) {
+  const partyOptions = getPartyOptions(allCandidates);
+  const positionOptions = getPositionOptions(allCandidates);
+
   return (
     <div className="states-accordion__body">
       {/* Interactive Map on Mobile */}
@@ -160,25 +262,59 @@ function AccordionBody({
         </div>
       </div>
 
-      {/* LGA filter */}
-      <div className="states-accordion__filter">
-        <label
-          htmlFor={`mob-lga-${stateObj.id}`}
-          className="states-accordion__filter-label"
-        >
-          Filter by Local Government
-        </label>
-        <DropdownSelect
-          id={`mob-lga-${stateObj.id}`}
-          onChange={onLgaChange}
-          options={lgas.map((localGovernment) => ({
-            listLabel: localGovernment,
-            value: localGovernment,
-          }))}
-          placeholder={`All local governments (${stateObj.lgaCount})`}
-          value={selectedLga}
-          variant="compact"
-        />
+      {/* Filters */}
+      <div className="states-accordion__filters">
+        <div className="states-accordion__filter">
+          <label
+            htmlFor={`mob-lga-${stateObj.id}`}
+            className="states-accordion__filter-label"
+          >
+            Local Government
+          </label>
+          <DropdownSelect
+            id={`mob-lga-${stateObj.id}`}
+            onChange={onLgaChange}
+            options={lgas.map((localGovernment) => ({
+              listLabel: localGovernment,
+              value: localGovernment,
+            }))}
+            placeholder="All LGAs"
+            value={selectedLga}
+            variant="compact"
+          />
+        </div>
+        <div className="states-accordion__filter">
+          <label
+            htmlFor={`mob-party-${stateObj.id}`}
+            className="states-accordion__filter-label"
+          >
+            Party
+          </label>
+          <DropdownSelect
+            id={`mob-party-${stateObj.id}`}
+            onChange={onPartyChange}
+            options={partyOptions}
+            placeholder="All parties"
+            value={selectedParty}
+            variant="compact"
+          />
+        </div>
+        <div className="states-accordion__filter">
+          <label
+            htmlFor={`mob-position-${stateObj.id}`}
+            className="states-accordion__filter-label"
+          >
+            Position
+          </label>
+          <DropdownSelect
+            id={`mob-position-${stateObj.id}`}
+            onChange={onPositionChange}
+            options={positionOptions}
+            placeholder="All positions"
+            value={selectedPosition}
+            variant="compact"
+          />
+        </div>
       </div>
 
       {/* Candidates */}
@@ -210,20 +346,28 @@ function AccordionBody({
 export function StatesPage({
   candidates = [],
   initialLga = "",
+  initialParty = "",
+  initialPosition = "",
   initialStateId = "abia",
 }: {
   candidates?: Candidate[];
   initialLga?: string;
+  initialParty?: string;
+  initialPosition?: string;
   initialStateId?: string;
 }) {
   const router = useRouter();
   const [selectedStateId, setSelectedStateId] = useState(initialStateId);
   const [selectedLga, setSelectedLga] = useState(initialLga);
+  const [selectedParty, setSelectedParty] = useState(initialParty);
+  const [selectedPosition, setSelectedPosition] = useState(initialPosition);
 
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedStateId) params.set("state", selectedStateId);
     if (selectedLga) params.set("lga", selectedLga);
+    if (selectedParty) params.set("party", selectedParty);
+    if (selectedPosition) params.set("position", selectedPosition);
 
     const newQueryStr = params.toString();
     const newPath = newQueryStr ? `/states?${newQueryStr}` : "/states";
@@ -231,7 +375,7 @@ export function StatesPage({
     if (window.location.search !== (newQueryStr ? `?${newQueryStr}` : "")) {
       router.replace(newPath, { scroll: false });
     }
-  }, [selectedStateId, selectedLga, router]);
+  }, [selectedStateId, selectedLga, selectedParty, selectedPosition, router]);
 
   useLayoutEffect(() => {
     if (selectedStateId && typeof window !== "undefined") {
@@ -252,13 +396,20 @@ export function StatesPage({
   const handleStateClick = (stateId: string) => {
     setSelectedStateId(stateId);
     setSelectedLga("");
+    setSelectedParty("");
+    setSelectedPosition("");
   };
 
   const lgas = selectedStateId ? getLgas(selectedStateId) : [];
 
-  const selectedStateCandidates = candidates.filter(
-    (c) => c.stateId?.toLowerCase() === selectedStateId.toLowerCase() && (!selectedLga || c.lga?.toLowerCase() === selectedLga.toLowerCase()),
-  );
+  const selectedStateAllCandidates = getStateCandidates(candidates, selectedStateId);
+  const selectedStateCandidates = filterStateCandidates(selectedStateAllCandidates, {
+    lga: selectedLga,
+    party: selectedParty,
+    position: selectedPosition,
+  });
+  const selectedStatePartyOptions = getPartyOptions(selectedStateAllCandidates);
+  const selectedStatePositionOptions = getPositionOptions(selectedStateAllCandidates);
   const selectedStateObj = stateNames.find((s) => s.id === selectedStateId);
 
   return (
@@ -516,33 +667,83 @@ export function StatesPage({
                     </div>
                   </div>
 
-                  {/* LGA Filter Dropdown inside details */}
-                  <div style={{ marginBottom: "2rem" }}>
-                    <label
-                      htmlFor="detail-lga-filter"
-                      style={{
-                        display: "block",
-                        fontFamily: "var(--ds-font-mono)",
-                        fontSize: "0.65rem",
-                        color: "var(--ds-color-ink-muted)",
-                        marginBottom: "0.3rem",
-                        textTransform: "uppercase",
-                        letterSpacing: "0.05em",
-                      }}
-                    >
-                      Filter by Local Government
-                    </label>
-                    <DropdownSelect
-                      id="detail-lga-filter"
-                      onChange={setSelectedLga}
-                      options={lgas.map((localGovernment) => ({
-                        listLabel: localGovernment,
-                        value: localGovernment,
-                      }))}
-                      placeholder={`All local governments (${selectedStateObj.lgaCount})`}
-                      value={selectedLga}
-                      variant="compact"
-                    />
+                  {/* Filters inside details */}
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "0.75rem", marginBottom: "2rem" }}>
+                    <div>
+                      <label
+                        htmlFor="detail-lga-filter"
+                        style={{
+                          display: "block",
+                          fontFamily: "var(--ds-font-mono)",
+                          fontSize: "0.65rem",
+                          color: "var(--ds-color-ink-muted)",
+                          marginBottom: "0.3rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        Local Government
+                      </label>
+                      <DropdownSelect
+                        id="detail-lga-filter"
+                        onChange={setSelectedLga}
+                        options={lgas.map((localGovernment) => ({
+                          listLabel: localGovernment,
+                          value: localGovernment,
+                        }))}
+                        placeholder="All LGAs"
+                        value={selectedLga}
+                        variant="compact"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="detail-party-filter"
+                        style={{
+                          display: "block",
+                          fontFamily: "var(--ds-font-mono)",
+                          fontSize: "0.65rem",
+                          color: "var(--ds-color-ink-muted)",
+                          marginBottom: "0.3rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        Party
+                      </label>
+                      <DropdownSelect
+                        id="detail-party-filter"
+                        onChange={setSelectedParty}
+                        options={selectedStatePartyOptions}
+                        placeholder="All parties"
+                        value={selectedParty}
+                        variant="compact"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="detail-position-filter"
+                        style={{
+                          display: "block",
+                          fontFamily: "var(--ds-font-mono)",
+                          fontSize: "0.65rem",
+                          color: "var(--ds-color-ink-muted)",
+                          marginBottom: "0.3rem",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.05em",
+                        }}
+                      >
+                        Position
+                      </label>
+                      <DropdownSelect
+                        id="detail-position-filter"
+                        onChange={setSelectedPosition}
+                        options={selectedStatePositionOptions}
+                        placeholder="All positions"
+                        value={selectedPosition}
+                        variant="compact"
+                      />
+                    </div>
                   </div>
 
                   <h4
@@ -595,9 +796,12 @@ export function StatesPage({
           <div className="states-mobile-only">
             {stateNames.map((state) => {
               const isOpen = state.id === selectedStateId;
-              const stateCandidates = candidates.filter(
-                (c) => c.stateId?.toLowerCase() === state.id.toLowerCase() && (!selectedLga || c.lga?.toLowerCase() === selectedLga.toLowerCase()),
-              );
+              const allStateCandidates = getStateCandidates(candidates, state.id);
+              const stateCandidates = filterStateCandidates(allStateCandidates, {
+                lga: selectedLga,
+                party: selectedParty,
+                position: selectedPosition,
+              });
               const stateObj = stateNames.find((s) => s.id === state.id);
 
               return (
@@ -627,7 +831,12 @@ export function StatesPage({
                       stateObj={stateObj}
                       lgas={lgas}
                       selectedLga={selectedLga}
+                      selectedParty={selectedParty}
+                      selectedPosition={selectedPosition}
                       onLgaChange={setSelectedLga}
+                      onPartyChange={setSelectedParty}
+                      onPositionChange={setSelectedPosition}
+                      allCandidates={allStateCandidates}
                       candidates={stateCandidates}
                       onSelectState={handleStateClick}
                     />

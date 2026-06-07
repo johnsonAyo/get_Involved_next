@@ -23,6 +23,8 @@ export default async function Page({
     <StatesPage
       candidates={candidates}
       initialLga={readSearchParam(params.lga) || ""}
+      initialParty={readSearchParam(params.party) || ""}
+      initialPosition={readSearchParam(params.position) || ""}
       initialStateId={readSearchParam(params.state) || "abia"}
     />
   );

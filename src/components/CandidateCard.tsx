@@ -28,6 +28,7 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
   const lgaName = stateObj && candidate.lga
     ? (stateObj.lgas.find((l) => l.toLowerCase() === candidate.lga!.toLowerCase()) || candidate.lga)
     : (candidate.lga || "");
+  const isPresidentialCandidate = candidate.position?.toLowerCase() === "president";
 
   function openProfile() {
     router.push(detailsUrl);
@@ -83,7 +84,7 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
           </span>
         )}
       </p>
-      {(stateName || lgaName) && (
+      {!isPresidentialCandidate && (stateName || lgaName) && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
           {stateName && (
             <Link

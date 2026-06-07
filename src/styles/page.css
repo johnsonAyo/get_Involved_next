@@ -1838,8 +1838,14 @@ html[data-theme="dark"] .home-journey__cta .ds-inline-link {
   color: var(--ds-color-ink);
 }
 
-.states-accordion__filter {
+.states-accordion__filters {
+  display: grid;
+  gap: 0.75rem;
   margin-bottom: 1.25rem;
+}
+
+.states-accordion__filter {
+  margin-bottom: 0;
 }
 
 .states-accordion__filter-label {
