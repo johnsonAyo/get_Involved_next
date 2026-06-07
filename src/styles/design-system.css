@@ -440,6 +440,295 @@ ul {
   line-height: 1.6;
 }
 
+.candidate-profile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+  margin-top: 0;
+}
+
+.candidate-profile__grid {
+  display: grid;
+  gap: var(--ds-space-5);
+}
+
+.candidate-profile__sidebar,
+.candidate-profile__main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+}
+
+.candidate-profile__hero,
+.candidate-profile__trust-card,
+.candidate-profile__section {
+  border: var(--ds-rule-thin) solid var(--ds-color-ink-a12);
+  border-radius: 1.25rem;
+  background: var(--ds-color-surface);
+}
+
+.candidate-profile__hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-5);
+  padding: var(--ds-space-5);
+}
+
+.candidate-profile__identity {
+  display: grid;
+  gap: var(--ds-space-4);
+  flex: 1 1 auto;
+}
+
+.candidate-profile__avatar-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.candidate-profile__avatar {
+  display: grid;
+  width: min(100%, 17rem);
+  height: 17rem;
+  place-items: center;
+  border: var(--ds-rule-thin) solid var(--ds-color-ink-a12);
+  border-radius: 1rem;
+  background: var(--ds-color-paper);
+  color: var(--ds-color-accent);
+  object-fit: cover;
+  object-position: center top;
+}
+
+.candidate-profile__avatar--initials {
+  font-family: var(--ds-font-display);
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+
+.candidate-profile__heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ds-space-3);
+}
+
+.candidate-profile__heading h1 {
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.5rem, 7.5vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.02;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.candidate-profile__subtitle {
+  color: var(--ds-color-ink-muted);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.candidate-profile__top-facts {
+  display: grid;
+  gap: var(--ds-space-3);
+}
+
+.candidate-profile__top-facts p:last-child {
+  margin-top: var(--ds-space-1);
+  font-size: 0.98rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.candidate-profile__party-card {
+  display: grid;
+  gap: var(--ds-space-3);
+  padding: var(--ds-space-3);
+  border: var(--ds-rule-thin) solid var(--ds-color-ink-a10);
+  border-radius: 0.9rem;
+  background: var(--ds-color-paper);
+}
+
+.candidate-profile__party-name {
+  color: var(--ds-color-ink);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.candidate-profile__party-name span {
+  min-width: 0;
+}
+
+.candidate-profile__party-logo {
+  width: 5rem;
+  height: 5rem;
+  object-fit: contain;
+}
+
+.candidate-profile__trust-card {
+  display: grid;
+  gap: var(--ds-space-5);
+  padding: var(--ds-space-5);
+}
+
+.candidate-profile__action {
+  width: 100%;
+  min-width: 0;
+  min-height: 3.25rem;
+  border-radius: 0.25rem;
+}
+
+.candidate-profile__trust-list {
+  display: grid;
+  gap: var(--ds-space-3);
+  color: var(--ds-color-ink-muted);
+  font-family: var(--ds-font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.candidate-profile__trust-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ds-space-3);
+}
+
+.candidate-profile__trust-list li::before {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex: 0 0 auto;
+  margin-top: 0.35rem;
+  border-radius: 999px;
+  background: var(--ds-color-accent);
+  content: "";
+}
+
+.candidate-profile__section {
+  padding: var(--ds-space-5);
+}
+
+.candidate-profile__section-heading {
+  margin-bottom: var(--ds-space-3);
+}
+
+.candidate-profile__section-heading h2 {
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.65rem, 6vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  line-height: 1.05;
+}
+
+.candidate-profile__empty,
+.candidate-profile__aside-copy {
+  color: var(--ds-color-ink-muted);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.65;
+}
+
+.candidate-profile__empty {
+  display: grid;
+  gap: var(--ds-space-4);
+}
+
+.candidate-profile__empty a,
+.candidate-profile__empty strong {
+  border-bottom: var(--ds-rule-medium) solid var(--ds-color-accent);
+  color: var(--ds-color-ink);
+}
+
+.candidate-profile__empty--small {
+  font-size: 0.95rem;
+}
+
+.candidate-profile__sources {
+  display: grid;
+  gap: var(--ds-space-3);
+  margin-top: var(--ds-space-4);
+}
+
+.candidate-profile__source {
+  display: grid;
+  gap: var(--ds-space-2);
+  padding: var(--ds-space-4);
+  border: var(--ds-rule-thin) solid var(--ds-color-ink-a10);
+  border-radius: 1rem;
+  background: var(--ds-color-paper);
+}
+
+.candidate-profile__source-index {
+  display: none;
+}
+
+.candidate-profile__source p {
+  width: fit-content;
+  border-bottom: var(--ds-rule-medium) solid var(--ds-color-accent);
+  font-size: 1.12rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.candidate-profile__source a {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--ds-color-ink-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+@media (min-width: 44rem) {
+  .candidate-profile__top-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .candidate-profile__identity {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+  }
+
+}
+
+@media (min-width: 62rem) {
+  .candidate-profile {
+    gap: var(--ds-space-6);
+  }
+
+  .candidate-profile__grid {
+    grid-template-columns: minmax(18rem, 0.43fr) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--ds-space-7);
+  }
+
+  .candidate-profile__sidebar {
+    position: sticky;
+    top: 6rem;
+  }
+
+  .candidate-profile__hero,
+  .candidate-profile__trust-card,
+  .candidate-profile__section {
+    border-radius: 1.5rem;
+  }
+
+  .candidate-profile__hero,
+  .candidate-profile__trust-card,
+  .candidate-profile__section {
+    padding: var(--ds-space-6);
+  }
+}
+
 @media (max-width: 38.75rem) {
   .ds-wordmark--footer {
     font-size: 1.25rem;
@@ -478,6 +767,16 @@ ul {
     font-size: 0.65rem;
     letter-spacing: 0;
     padding: var(--ds-space-1) 0.35rem;
+  }
+
+  .candidate-profile__section,
+  .candidate-profile__hero {
+    padding: var(--ds-space-4);
+  }
+
+  .candidate-profile__avatar {
+    width: 100%;
+    height: min(72vw, 18rem);
   }
 }
 

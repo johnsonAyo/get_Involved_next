@@ -7,12 +7,194 @@ import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { SafeCandidateCard } from "@/components/SafeCandidateCard";
 import { DropdownSelect } from "@/components/DropdownSelect";
 import { Pagination } from "@/components/Pagination";
-import { nigeriaGeo, getLgas } from "@/data/nigeria.js";
+import { nigeriaGeo, getLgas, getState } from "@/data/nigeria.js";
 import { usePagination } from "@/hooks/usePagination";
 import type { Candidate } from "@/types/domain";
 import { formatPositionName } from "@/utils/formatters";
 
 const CANDIDATES_PER_PAGE = 12;
+
+function normalizeSources(source: Candidate["source"]): string[] {
+  if (Array.isArray(source)) {
+    return source.filter((item) => item.trim().length > 0);
+  }
+
+  return source?.trim() ? [source] : [];
+}
+
+function getSourceHost(source: string): string {
+  try {
+    const host = new URL(source).hostname.replace(/^www\./, "");
+    return host || source;
+  } catch {
+    return source;
+  }
+}
+
+function getCandidateInitials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const first = parts[0]?.[0] || "";
+  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] || "" : "";
+  return `${first}${last}`.toUpperCase() || "C";
+}
+
+function getCandidateLocation(candidate: Candidate): string {
+  const stateFromId = candidate.stateId
+    ? (getState(candidate.stateId.toLowerCase()) as { name: string } | undefined)
+    : undefined;
+  const stateName = stateFromId?.name || candidate.stateName || candidate.state || "";
+
+  return [candidate.lga, stateName].filter(Boolean).join(", ");
+}
+
+function CandidateProfile({ candidate }: { candidate: Candidate }) {
+  const sources = normalizeSources(candidate.source);
+  const position = formatPositionName(candidate.position) || candidate.position || "Office";
+  const location = getCandidateLocation(candidate);
+  const partyName = candidate.partyFullName || candidate.party || "Not listed";
+  const initials = getCandidateInitials(candidate.candidateName);
+
+  return (
+    <article className="candidate-profile" aria-labelledby="candidate-profile-title">
+      <PageBreadcrumb
+        items={[
+          { href: "/", label: "Home" },
+          { href: "/candidates", label: "Candidates" },
+          { label: candidate.candidateName },
+        ]}
+      />
+
+      <div className="candidate-profile__grid">
+        <div className="candidate-profile__sidebar">
+          <section className="candidate-profile__hero">
+            <div className="candidate-profile__identity">
+              <div className="candidate-profile__avatar-wrap">
+                {candidate.profilePictureUrl ? (
+                  <img
+                    alt={`${candidate.candidateName} profile picture`}
+                    className="candidate-profile__avatar"
+                    src={candidate.profilePictureUrl}
+                  />
+                ) : (
+                  <div className="candidate-profile__avatar candidate-profile__avatar--initials" aria-hidden="true">
+                    {initials}
+                  </div>
+                )}
+              </div>
+
+              <div className="candidate-profile__heading">
+                <h1 id="candidate-profile-title">{candidate.candidateName}</h1>
+                <div className="candidate-profile__top-facts" aria-label="Candidate summary">
+                  <div>
+                    <p className="ds-eyebrow">Position</p>
+                    <p>{position}</p>
+                  </div>
+                  <div>
+                    <p className="ds-eyebrow">Age</p>
+                    <p>Not listed</p>
+                  </div>
+                </div>
+                {location ? (
+                  <p className="candidate-profile__subtitle">{location}</p>
+                ) : null}
+                <div className="candidate-profile__party-card">
+                  <p className="ds-eyebrow">Current party</p>
+                  {candidate.logo ? (
+                    <img
+                      alt={`${partyName} logo`}
+                      className="candidate-profile__party-logo"
+                      src={candidate.logo}
+                    />
+                  ) : null}
+                  <div className="candidate-profile__party-name">
+                    <span>{partyName}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </section>
+
+          <section className="candidate-profile__trust-card">
+            <ul className="candidate-profile__trust-list" aria-label="Profile verification standards">
+              <li>Public sources only</li>
+              <li>Citations on every profile</li>
+              <li>Corrections published in full</li>
+            </ul>
+            <Link
+              className="ds-button ds-button--primary candidate-profile__action"
+              href={`/report?candidate=${encodeURIComponent(candidate.id)}`}
+            >
+              Request a correction
+            </Link>
+          </section>
+
+        </div>
+
+        <div className="candidate-profile__main">
+          <section className="candidate-profile__section">
+            <div className="candidate-profile__section-heading">
+              <h2>Education</h2>
+            </div>
+            <div className="candidate-profile__empty">
+              <p>This section is not available yet for this candidate.</p>
+              <p>If you have a credible public source, you can help improve this profile.</p>
+            </div>
+          </section>
+
+          <section className="candidate-profile__section">
+            <div className="candidate-profile__section-heading">
+              <h2>Experience</h2>
+            </div>
+            <div className="candidate-profile__empty">
+              <p>Public background information will appear here when available.</p>
+              <p>You can suggest updates with a public link.</p>
+            </div>
+          </section>
+
+          <section className="candidate-profile__section">
+            <div className="candidate-profile__section-heading">
+              <h2>Manifesto</h2>
+            </div>
+            <div className="candidate-profile__empty">
+              <p>We summarize policies using public sources and official statements.</p>
+              <p>No manifesto content has been added yet for this candidate.</p>
+            </div>
+          </section>
+
+          <section className="candidate-profile__section" id="candidate-sources">
+            <div className="candidate-profile__section-heading">
+              <h2>Sources</h2>
+            </div>
+            <p className="candidate-profile__aside-copy">
+              Use sources to verify this listing. We link only to public pages.
+            </p>
+
+            {sources.length > 0 ? (
+              <ul className="candidate-profile__sources">
+                {sources.map((source, index) => (
+                  <li className="candidate-profile__source" key={`${source}-${index}`}>
+                    <span className="candidate-profile__source-index">{index + 1}</span>
+                    <div>
+                      <p>{getSourceHost(source)}</p>
+                      <a href={source} rel="noopener noreferrer" target="_blank">
+                        {source}
+                      </a>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="candidate-profile__empty candidate-profile__empty--small">
+                <p>No public source has been attached to this profile yet.</p>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    </article>
+  );
+}
 
 type Props = {
   candidates?: Candidate[];
@@ -204,31 +386,25 @@ export function CandidatePage({
 
       <main
         id="main-content"
-        style={{ padding: "3rem 1rem", minHeight: "60vh" }}
+        style={{
+          padding: isListMode ? "3rem 1rem" : "1.75rem 1rem 3rem",
+          minHeight: "60vh",
+        }}
       >
         <div
           style={{
-            maxWidth: isListMode ? "var(--ds-frame)" : "32rem",
+            maxWidth: "var(--ds-frame)",
             margin: "0 auto",
           }}
         >
-          <PageBreadcrumb
-            items={
-              isListMode
-                ? [
-                  { href: "/", label: "Home" },
-                  { label: "Candidates" },
-                ]
-                : [
-                  { href: "/", label: "Home" },
-                  {
-                    href: "/candidates",
-                    label: "Candidates",
-                  },
-                  { label: "Candidate Profile" },
-                ]
-            }
-          />
+          {isListMode ? (
+            <PageBreadcrumb
+              items={[
+                { href: "/", label: "Home" },
+                { label: "Candidates" },
+              ]}
+            />
+          ) : null}
 
           {isListMode ? (
             <div style={{ marginTop: "1rem" }}>
@@ -483,20 +659,7 @@ export function CandidatePage({
               )}
             </div>
           ) : candidate ? (
-            <div style={{ marginTop: "1rem" }}>
-              <h1
-                style={{
-                  marginBottom: "2rem",
-                  fontFamily: "var(--ds-font-display)",
-                  fontSize: "2rem",
-                }}
-              >
-                Candidate Profile
-              </h1>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
-                <SafeCandidateCard candidate={candidate} />
-              </ul>
-            </div>
+            <CandidateProfile candidate={candidate} />
           ) : (
             <div style={{ textAlign: "center", marginTop: "4rem" }}>
               <p
