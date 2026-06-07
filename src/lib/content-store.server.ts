@@ -27,9 +27,15 @@ type CandidateRow = {
   source: unknown;
   profile: {
     id: string;
+    birth_year: number | null;
+    career_history: unknown;
+    education: unknown;
     full_name: string | null;
+    links: unknown;
+    profile_highlights: unknown;
     profile_url: string | null;
     profile_picture_url: string | null;
+    state_of_origin: string | null;
   } | null;
   party: {
     id: string;
@@ -46,6 +52,8 @@ type PartyRow = {
   name: string;
 };
 
+type ProfileRow = CandidateRow["profile"];
+
 function normalizeSource(source: unknown): string[] {
   if (Array.isArray(source)) {
     return source.filter(
@@ -58,6 +66,16 @@ function normalizeSource(source: unknown): string[] {
   }
 
   return [];
+}
+
+function normalizeTextList(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0,
+  );
 }
 
 function formatCandidateName(str?: string | null): string {
@@ -75,13 +93,19 @@ function mapSupabaseCandidate(row: CandidateRow): Candidate {
   return {
     id: row.id,
     year: row.year ?? undefined,
+    birthYear: row.profile?.birth_year ?? undefined,
     candidateName: formatCandidateName(row.profile?.full_name),
+    careerHistory: normalizeTextList(row.profile?.career_history),
+    education: normalizeTextList(row.profile?.education),
+    profileHighlights: normalizeTextList(row.profile?.profile_highlights),
+    profileSources: normalizeTextList(row.profile?.links),
     viceCandidateName: formatCandidateName(row.vice_candidate_name),
     partyId: row.party_id?.toLowerCase() || "",
     party: row.party?.abbreviation || "Independent",
     partyFullName: row.party?.name || "Independent",
     position: safePosition,
     stateId: row.state_id?.toLowerCase() || "",
+    stateName: row.profile?.state_of_origin || undefined,
     lga: row.lga || "",
     display: row.display !== false,
     source: normalizeSource(row.source),
@@ -112,10 +136,22 @@ async function getCandidatesFromSupabase(): Promise<Candidate[] | null> {
       return null;
     }
 
-    const { data: profilesData } = await supabase.from("profile").select("id, full_name, profile_url, profile_picture_url");
+    const profileSelect = "id, full_name, birth_year, education, career_history, profile_highlights, links, profile_url, profile_picture_url, state_of_origin";
+    let profilesData: ProfileRow[] | null = null;
+    const { data: detailedProfilesData, error: profilesError } = await supabase
+      .from("profile")
+      .select(profileSelect);
+    profilesData = detailedProfilesData as ProfileRow[] | null;
+
+    if (profilesError) {
+      const fallback = await supabase
+        .from("profile")
+        .select("id, full_name, links, profile_url, profile_picture_url, state_of_origin");
+      profilesData = fallback.data as ProfileRow[] | null;
+    }
     const { data: partiesData } = await supabase.from("parties").select("id, abbreviation, name, logo");
 
-    const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+    const profilesMap = new Map((profilesData || []).filter((p): p is NonNullable<ProfileRow> => Boolean(p)).map(p => [p.id, p]));
     const partiesMap = new Map((partiesData || []).map(p => [p.id, p]));
 
     const enrichedData = (candidates || []).map(candidate => ({

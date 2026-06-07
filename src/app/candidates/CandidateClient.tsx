@@ -48,20 +48,93 @@ function getCandidateNameFontSize(name: string): string {
   return "1.55rem";
 }
 
-function getCandidateLocation(candidate: Candidate): string {
-  const stateFromId = candidate.stateId
-    ? (getState(candidate.stateId.toLowerCase()) as { name: string } | undefined)
+function getCandidateState(candidate: Candidate): { name: string } | null {
+  const stateKey = candidate.stateId || candidate.stateName || candidate.state || "";
+  const stateFromId = stateKey
+    ? (getState(stateKey.toLowerCase()) as { name: string } | undefined)
     : undefined;
   const stateName = stateFromId?.name || candidate.stateName || candidate.state || "";
 
-  return [candidate.lga, stateName].filter(Boolean).join(", ");
+  if (!stateName) return null;
+
+  return {
+    name: stateName,
+  };
+}
+
+function getCurrentAge(candidate: Candidate): number | null {
+  if (!candidate.birthYear) return null;
+  return new Date().getFullYear() - candidate.birthYear;
+}
+
+function ProfileListSection({
+  emptyCopy,
+  items,
+  title,
+}: {
+  emptyCopy: string;
+  items?: string[];
+  title: string;
+}) {
+  return (
+    <section className="candidate-profile__section">
+      <div className="candidate-profile__section-heading">
+        <h2>{title}</h2>
+      </div>
+      {items && items.length > 0 ? (
+        <ul className="candidate-profile__detail-list">
+          {items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <div className="candidate-profile__empty">
+          <p>{emptyCopy}</p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function SourceList({
+  emptyCopy,
+  sources,
+}: {
+  emptyCopy: string;
+  sources: string[];
+}) {
+  return sources.length > 0 ? (
+    <ul className="candidate-profile__sources">
+      {sources.map((source, index) => (
+        <li className="candidate-profile__source" key={`${source}-${index}`}>
+          <span className="candidate-profile__source-index">{index + 1}</span>
+          <div>
+            <p>{getSourceHost(source)}</p>
+            <a href={source} rel="noopener noreferrer" target="_blank">
+              {source}
+            </a>
+          </div>
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <div className="candidate-profile__empty candidate-profile__empty--small">
+      <p>{emptyCopy}</p>
+    </div>
+  );
 }
 
 function CandidateProfile({ candidate }: { candidate: Candidate }) {
-  const sources = normalizeSources(candidate.source);
+  const profileSources = normalizeSources(candidate.profileSources);
   const position = formatPositionName(candidate.position) || candidate.position || "Office";
-  const location = getCandidateLocation(candidate);
+  const state = getCandidateState(candidate);
+  const age = getCurrentAge(candidate);
   const partyName = candidate.partyFullName || candidate.party || "Not listed";
+  const partyAlias = candidate.party || candidate.partyId?.toUpperCase() || "";
+  const partyDisplayName =
+    partyAlias && partyName.toLowerCase() !== partyAlias.toLowerCase()
+      ? `${partyName} (${partyAlias})`
+      : partyName;
   const initials = getCandidateInitials(candidate.candidateName);
   const candidateNameStyle = {
     "--candidate-profile-name-size": getCandidateNameFontSize(candidate.candidateName),
@@ -110,11 +183,14 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
                   </div>
                   <div>
                     <p className="ds-eyebrow">Age</p>
-                    <p>Not listed</p>
+                    <p>{age ?? "Not listed"}</p>
                   </div>
                 </div>
-                {location ? (
-                  <p className="candidate-profile__subtitle">{location}</p>
+                {state ? (
+                  <div className="candidate-profile__origin">
+                    <p className="ds-eyebrow">State of origin</p>
+                    <p>{state.name}</p>
+                  </div>
                 ) : null}
               </div>
             </div>
@@ -128,7 +204,7 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
                 />
               ) : null}
               <div className="candidate-profile__party-name">
-                <span>{partyName}</span>
+                <span>{partyDisplayName}</span>
               </div>
             </div>
 
@@ -150,63 +226,36 @@ function CandidateProfile({ candidate }: { candidate: Candidate }) {
         </div>
 
         <div className="candidate-profile__main">
-          <section className="candidate-profile__section">
-            <div className="candidate-profile__section-heading">
-              <h2>Education</h2>
-            </div>
-            <div className="candidate-profile__empty">
-              <p>This section is not available yet for this candidate.</p>
-              <p>If you have a credible public source, you can help improve this profile.</p>
-            </div>
-          </section>
+          <ProfileListSection
+            emptyCopy="Education details are not available yet for this candidate."
+            items={candidate.education}
+            title="Education"
+          />
 
-          <section className="candidate-profile__section">
-            <div className="candidate-profile__section-heading">
-              <h2>Experience</h2>
-            </div>
-            <div className="candidate-profile__empty">
-              <p>Public background information will appear here when available.</p>
-              <p>You can suggest updates with a public link.</p>
-            </div>
-          </section>
+          <ProfileListSection
+            emptyCopy="Career and public service details are not available yet for this candidate."
+            items={candidate.careerHistory}
+            title="Career & Public Service"
+          />
 
-          <section className="candidate-profile__section">
-            <div className="candidate-profile__section-heading">
-              <h2>Manifesto</h2>
-            </div>
-            <div className="candidate-profile__empty">
-              <p>We summarize policies using public sources and official statements.</p>
-              <p>No manifesto content has been added yet for this candidate.</p>
-            </div>
-          </section>
+          <ProfileListSection
+            emptyCopy="Profile highlights have not been added yet for this candidate."
+            items={candidate.profileHighlights}
+            title="Highlights"
+          />
 
-          <section className="candidate-profile__section" id="candidate-sources">
+          <section className="candidate-profile__section" id="profile-source">
             <div className="candidate-profile__section-heading">
-              <h2>Sources</h2>
+              <h2>Source</h2>
             </div>
             <p className="candidate-profile__aside-copy">
-              Use sources to verify this listing. We link only to public pages.
+              These sources support profile details such as education, career history, age, and public offices.
             </p>
 
-            {sources.length > 0 ? (
-              <ul className="candidate-profile__sources">
-                {sources.map((source, index) => (
-                  <li className="candidate-profile__source" key={`${source}-${index}`}>
-                    <span className="candidate-profile__source-index">{index + 1}</span>
-                    <div>
-                      <p>{getSourceHost(source)}</p>
-                      <a href={source} rel="noopener noreferrer" target="_blank">
-                        {source}
-                      </a>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="candidate-profile__empty candidate-profile__empty--small">
-                <p>No public source has been attached to this profile yet.</p>
-              </div>
-            )}
+            <SourceList
+              emptyCopy="No source has been attached yet."
+              sources={profileSources}
+            />
           </section>
         </div>
       </div>

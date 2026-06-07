@@ -13,6 +13,11 @@ export type Candidate = {
   id: Id;
   year?: number;
   candidateName: string;
+  birthYear?: number;
+  careerHistory?: string[];
+  education?: string[];
+  profileHighlights?: string[];
+  profileSources?: string[];
   profileUrl?: string;
   profilePictureUrl?: string;
   party: string;
