@@ -100,16 +100,13 @@ export async function POST(request: NextRequest) {
     id: candidateId,
     profile_id: body.profile_id,
     year: body.year ?? null,
-    position_id: body.position_id ?? null,
     position: body.position ?? "",
-    position_sort_order: body.position_sort_order ?? null,
     party_id: body.party_id ?? null,
     state_id: body.state_id ?? "",
     lga: body.lga ?? "",
     vice_candidate_name: body.vice_candidate_name ?? "",
     display: body.display !== false,
     source: Array.isArray(body.source) ? body.source : [],
-    payload: body,
     updated_at: new Date().toISOString(),
   };
 

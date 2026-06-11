@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
     name: body.name || "",
     abbreviation: body.abbreviation || "",
     logo: body.logo || "",
-    payload: body,
     updated_at: new Date().toISOString(),
   };
 

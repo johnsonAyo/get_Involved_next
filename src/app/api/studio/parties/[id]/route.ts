@@ -40,7 +40,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       name: body.name,
       abbreviation: body.abbreviation,
       logo: body.logo ?? "",
-      payload: body,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
