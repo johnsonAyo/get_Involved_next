@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
     last_known_position: body.last_known_position ?? null,
     party_history: [],
     office_history: [],
-    payload: { studio: true },
     updated_at: new Date().toISOString(),
   };
 
