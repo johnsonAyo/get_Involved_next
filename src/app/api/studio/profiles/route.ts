@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { revalidateTag } from "next/cache";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
@@ -68,6 +69,8 @@ export async function POST(request: NextRequest) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  revalidateTag("candidates", "max");
 
   return NextResponse.json(data, { status: 201 });
 }

@@ -214,7 +214,15 @@ async function getCandidatesFromSupabase(): Promise<Candidate[] | null> {
 
     const { data: candidates, error } = await supabase
       .from("candidates")
-      .select('*')
+      .select(`
+        *,
+        profile:profile_id (
+          id, full_name, birth_year, education, career_history, profile_highlights, links, profile_url, profile_picture_url, state_of_origin
+        ),
+        party:party_id (
+          id, abbreviation, name, logo
+        )
+      `)
       .eq("display", true)
       .order("year", { ascending: false, nullsFirst: false });
 
@@ -222,34 +230,10 @@ async function getCandidatesFromSupabase(): Promise<Candidate[] | null> {
       return null;
     }
 
-    const profileSelect = "id, full_name, birth_year, education, career_history, profile_highlights, links, profile_url, profile_picture_url, state_of_origin";
-    let profilesData: ProfileRow[] | null = null;
-    const { data: detailedProfilesData, error: profilesError } = await supabase
-      .from("profile")
-      .select(profileSelect);
-    profilesData = detailedProfilesData as ProfileRow[] | null;
-
-    if (profilesError) {
-      const fallback = await supabase
-        .from("profile")
-        .select("id, full_name, links, profile_url, profile_picture_url, state_of_origin");
-      profilesData = fallback.data as ProfileRow[] | null;
-    }
-    const { data: partiesData } = await supabase.from("parties").select("id, abbreviation, name, logo");
-
-    const profilesMap = new Map((profilesData || []).filter((p): p is NonNullable<ProfileRow> => Boolean(p)).map(p => [p.id, p]));
-    const partiesMap = new Map((partiesData || []).map(p => [p.id, p]));
-
-    const enrichedData = (candidates || []).map(candidate => ({
-      ...candidate,
-      profile: candidate.profile_id ? profilesMap.get(candidate.profile_id) || null : null,
-      party: candidate.party_id ? partiesMap.get(candidate.party_id) || null : null
-    }));
-
     const PREFERRED_PRESIDENTIAL_PARTY_IDS = ["ndc", "apc", "adc"];
     const NOT_FOUND_INDEX = -1;
 
-    const mapped = enrichedData.map((row) => mapSupabaseCandidate(row as unknown as CandidateRow));
+    const mapped = candidates.map((row) => mapSupabaseCandidate(row as unknown as CandidateRow));
 
     const positionsList = getPositions().map(p => p.toLowerCase());
     const getPositionOrder = (pos: string) => {
@@ -316,15 +300,27 @@ async function getPartiesFromSupabase(): Promise<Party[] | null> {
   }
 }
 
-export async function getCandidates(): Promise<Candidate[]> {
+async function fetchCandidates(): Promise<Candidate[]> {
   const supabaseCandidates = await getCandidatesFromSupabase();
   return supabaseCandidates || [];
 }
 
-export async function getParties(): Promise<Party[]> {
+export const getCandidates = unstable_cache(
+  fetchCandidates,
+  ["candidates-list"],
+  { revalidate: 86400, tags: ["candidates"] }
+);
+
+async function fetchParties(): Promise<Party[]> {
   const supabaseParties = await getPartiesFromSupabase();
   return supabaseParties || [];
 }
+
+export const getParties = unstable_cache(
+  fetchParties,
+  ["parties-list"],
+  { revalidate: 86400, tags: ["parties"] }
+);
 
 export async function getPollingUnits({
   cursor = "",
@@ -497,7 +493,7 @@ export function getPositions(): string[] {
   ];
 }
 
-export async function getFacts(): Promise<Fact[]> {
+async function fetchFacts(): Promise<Fact[]> {
   if (!hasServerSupabaseConfig()) return [];
   const supabase = createSupabaseServerClient();
   const { data, error } = await supabase
@@ -509,6 +505,12 @@ export async function getFacts(): Promise<Fact[]> {
   if (error || !data) return [];
   return data as Fact[];
 }
+
+export const getFacts = unstable_cache(
+  fetchFacts,
+  ["election-facts"],
+  { revalidate: 86400, tags: ["facts"] }
+);
 
 export async function getDirectoryStates(): Promise<DirectoryStateOption[]> {
   if (hasServerSupabaseConfig()) {
@@ -535,133 +537,274 @@ export async function getDirectoryStates(): Promise<DirectoryStateOption[]> {
 // Re-export so client/server can keep the type boundary clean.
 export type { PollingUnitStateStat } from "@/types/domain";
 
-const POLLING_UNIT_STATS_PAGE_SIZE = 1000;
-const POLLING_UNIT_STATS_MAX_ROWS = 200_000;
+const STATIC_POLLING_UNIT_STATS: PollingUnitStateStat[] = [
+  {
+    "stateId": "lagos",
+    "stateName": "Lagos",
+    "lgaCount": 20,
+    "wardCount": 245,
+    "pollingUnitCount": 13323
+  },
+  {
+    "stateId": "kano",
+    "stateName": "Kano",
+    "lgaCount": 44,
+    "wardCount": 484,
+    "pollingUnitCount": 11208
+  },
+  {
+    "stateId": "kaduna",
+    "stateName": "Kaduna",
+    "lgaCount": 23,
+    "wardCount": 255,
+    "pollingUnitCount": 8012
+  },
+  {
+    "stateId": "rivers",
+    "stateName": "Rivers",
+    "lgaCount": 23,
+    "wardCount": 319,
+    "pollingUnitCount": 6866
+  },
+  {
+    "stateId": "katsina",
+    "stateName": "Katsina",
+    "lgaCount": 34,
+    "wardCount": 361,
+    "pollingUnitCount": 6636
+  },
+  {
+    "stateId": "oyo",
+    "stateName": "Oyo",
+    "lgaCount": 33,
+    "wardCount": 351,
+    "pollingUnitCount": 6390
+  },
+  {
+    "stateId": "delta",
+    "stateName": "Delta",
+    "lgaCount": 25,
+    "wardCount": 270,
+    "pollingUnitCount": 5863
+  },
+  {
+    "stateId": "anambra",
+    "stateName": "Anambra",
+    "lgaCount": 21,
+    "wardCount": 326,
+    "pollingUnitCount": 5720
+  },
+  {
+    "stateId": "bauchi",
+    "stateName": "Bauchi",
+    "lgaCount": 20,
+    "wardCount": 212,
+    "pollingUnitCount": 5415
+  },
+  {
+    "stateId": "benue",
+    "stateName": "Benue",
+    "lgaCount": 23,
+    "wardCount": 276,
+    "pollingUnitCount": 5102
+  },
+  {
+    "stateId": "borno",
+    "stateName": "Borno",
+    "lgaCount": 27,
+    "wardCount": 312,
+    "pollingUnitCount": 5071
+  },
+  {
+    "stateId": "ogun",
+    "stateName": "Ogun",
+    "lgaCount": 20,
+    "wardCount": 236,
+    "pollingUnitCount": 5042
+  },
+  {
+    "stateId": "plateau",
+    "stateName": "Plateau",
+    "lgaCount": 17,
+    "wardCount": 207,
+    "pollingUnitCount": 4989
+  },
+  {
+    "stateId": "niger",
+    "stateName": "Niger",
+    "lgaCount": 25,
+    "wardCount": 274,
+    "pollingUnitCount": 4950
+  },
+  {
+    "stateId": "imo",
+    "stateName": "Imo",
+    "lgaCount": 27,
+    "wardCount": 304,
+    "pollingUnitCount": 4737
+  },
+  {
+    "stateId": "edo",
+    "stateName": "Edo",
+    "lgaCount": 18,
+    "wardCount": 192,
+    "pollingUnitCount": 4519
+  },
+  {
+    "stateId": "jigawa",
+    "stateName": "Jigawa",
+    "lgaCount": 27,
+    "wardCount": 286,
+    "pollingUnitCount": 4502
+  },
+  {
+    "stateId": "akwa-ibom",
+    "stateName": "Akwa Ibom",
+    "lgaCount": 31,
+    "wardCount": 329,
+    "pollingUnitCount": 4352
+  },
+  {
+    "stateId": "enugu",
+    "stateName": "Enugu",
+    "lgaCount": 17,
+    "wardCount": 260,
+    "pollingUnitCount": 4141
+  },
+  {
+    "stateId": "adamawa",
+    "stateName": "Adamawa",
+    "lgaCount": 21,
+    "wardCount": 226,
+    "pollingUnitCount": 4104
+  },
+  {
+    "stateId": "abia",
+    "stateName": "Abia",
+    "lgaCount": 17,
+    "wardCount": 184,
+    "pollingUnitCount": 4061
+  },
+  {
+    "stateId": "sokoto",
+    "stateName": "Sokoto",
+    "lgaCount": 23,
+    "wardCount": 244,
+    "pollingUnitCount": 3991
+  },
+  {
+    "stateId": "ondo",
+    "stateName": "Ondo",
+    "lgaCount": 18,
+    "wardCount": 203,
+    "pollingUnitCount": 3933
+  },
+  {
+    "stateId": "osun",
+    "stateName": "Osun",
+    "lgaCount": 30,
+    "wardCount": 332,
+    "pollingUnitCount": 3763
+  },
+  {
+    "stateId": "kebbi",
+    "stateName": "Kebbi",
+    "lgaCount": 21,
+    "wardCount": 225,
+    "pollingUnitCount": 3739
+  },
+  {
+    "stateId": "taraba",
+    "stateName": "Taraba",
+    "lgaCount": 16,
+    "wardCount": 168,
+    "pollingUnitCount": 3597
+  },
+  {
+    "stateId": "zamfara",
+    "stateName": "Zamfara",
+    "lgaCount": 14,
+    "wardCount": 147,
+    "pollingUnitCount": 3529
+  },
+  {
+    "stateId": "kogi",
+    "stateName": "Kogi",
+    "lgaCount": 21,
+    "wardCount": 239,
+    "pollingUnitCount": 3508
+  },
+  {
+    "stateId": "cross-river",
+    "stateName": "Cross River",
+    "lgaCount": 18,
+    "wardCount": 193,
+    "pollingUnitCount": 3281
+  },
+  {
+    "stateId": "nasarawa",
+    "stateName": "Nasarawa",
+    "lgaCount": 13,
+    "wardCount": 147,
+    "pollingUnitCount": 3256
+  },
+  {
+    "stateId": "gombe",
+    "stateName": "Gombe",
+    "lgaCount": 11,
+    "wardCount": 114,
+    "pollingUnitCount": 2988
+  },
+  {
+    "stateId": "ebonyi",
+    "stateName": "Ebonyi",
+    "lgaCount": 13,
+    "wardCount": 171,
+    "pollingUnitCount": 2943
+  },
+  {
+    "stateId": "kwara",
+    "stateName": "Kwara",
+    "lgaCount": 16,
+    "wardCount": 193,
+    "pollingUnitCount": 2887
+  },
+  {
+    "stateId": "yobe",
+    "stateName": "Yobe",
+    "lgaCount": 17,
+    "wardCount": 178,
+    "pollingUnitCount": 2823
+  },
+  {
+    "stateId": "fct",
+    "stateName": "FCT — Abuja",
+    "lgaCount": 6,
+    "wardCount": 62,
+    "pollingUnitCount": 2820
+  },
+  {
+    "stateId": "ekiti",
+    "stateName": "Ekiti",
+    "lgaCount": 16,
+    "wardCount": 177,
+    "pollingUnitCount": 2445
+  },
+  {
+    "stateId": "bayelsa",
+    "stateName": "Bayelsa",
+    "lgaCount": 8,
+    "wardCount": 105,
+    "pollingUnitCount": 2244
+  }
+];
 
-type StateAggregate = {
-  stateName: string;
-  wards: Set<string>;
-  lgas: Set<string>;
-  count: number;
-};
-
-/**
- * Fetch per-state aggregates for the polling_units dataset.
- * Returns each state with its LGA, ward, and polling-unit counts.
- *
- * The result is cached at the framework level (revalidated hourly) so that
- * the home page does not run a full paginated scan on every request.
- *
- * When Supabase is not configured or the table cannot be read, we fall back
- * to a model based on `nigeriaGeo` LGA counts so the UI still has data.
- */
 async function fetchPollingUnitStateStats(): Promise<PollingUnitStateStat[]> {
-  const fallback = (): PollingUnitStateStat[] =>
-    nigeriaGeo
-      .map((state) => ({
-        stateId: state.id,
-        stateName: state.name,
-        lgaCount: state.lgas.length,
-        wardCount: 0,
-        pollingUnitCount: 0,
-      }))
-      .sort((a, b) =>
-        b.lgaCount !== a.lgaCount
-          ? b.lgaCount - a.lgaCount
-          : a.stateName.localeCompare(b.stateName),
-      );
-
-  if (!hasServerSupabaseConfig()) {
-    return fallback();
-  }
-
-  try {
-    const supabase = createSupabaseServerClient();
-    if (!supabase) return fallback();
-
-    const aggregates = new Map<string, StateAggregate>();
-
-    // Seed with static metadata so states without any rows still appear.
-    for (const state of nigeriaGeo) {
-      aggregates.set(state.id, {
-        stateName: state.name,
-        wards: new Set<string>(),
-        lgas: new Set(state.lgas.map((lga) => lga.toLowerCase())),
-        count: 0,
-      });
-    }
-
-    let from = 0;
-    let fetched = 0;
-
-    while (fetched < POLLING_UNIT_STATS_MAX_ROWS) {
-      const { data, error } = await supabase
-        .from("polling_units")
-        .select("state_slug, state, lga, ward")
-        .range(from, from + POLLING_UNIT_STATS_PAGE_SIZE - 1);
-
-      if (error || !data || data.length === 0) {
-        break;
-      }
-
-      for (const row of data) {
-        const slug = (row.state_slug as string | null)?.toLowerCase();
-        if (!slug) continue;
-        let bucket = aggregates.get(slug);
-        if (!bucket) {
-          bucket = {
-            stateName:
-              typeof row.state === "string" && row.state.length > 0
-                ? row.state
-                : slug,
-            wards: new Set<string>(),
-            lgas: new Set<string>(),
-            count: 0,
-          };
-          aggregates.set(slug, bucket);
-        }
-        bucket.count += 1;
-        if (row.ward) bucket.wards.add(String(row.ward));
-        if (row.lga) bucket.lgas.add(String(row.lga).toLowerCase());
-      }
-
-      fetched += data.length;
-      if (data.length < POLLING_UNIT_STATS_PAGE_SIZE) {
-        break;
-      }
-      from += POLLING_UNIT_STATS_PAGE_SIZE;
-    }
-
-    const results: PollingUnitStateStat[] = [];
-    for (const [stateId, bucket] of aggregates.entries()) {
-      const staticState = nigeriaGeo.find((state) => state.id === stateId);
-      results.push({
-        stateId,
-        stateName: staticState?.name ?? bucket.stateName ?? stateId,
-        // Always trust the static LGA list because the polling_units table
-        // only contains rows for states that have been imported so far.
-        lgaCount: staticState ? staticState.lgas.length : bucket.lgas.size,
-        wardCount: bucket.wards.size,
-        pollingUnitCount: bucket.count,
-      });
-    }
-
-    return results.sort((a, b) => {
-      if (b.pollingUnitCount !== a.pollingUnitCount) {
-        return b.pollingUnitCount - a.pollingUnitCount;
-      }
-      if (b.lgaCount !== a.lgaCount) {
-        return b.lgaCount - a.lgaCount;
-      }
-      return a.stateName.localeCompare(b.stateName);
-    });
-  } catch {
-    return fallback();
-  }
+  return STATIC_POLLING_UNIT_STATS;
 }
 
 export const getPollingUnitStateStats = unstable_cache(
   fetchPollingUnitStateStats,
   ["polling-unit-state-stats"],
-  { revalidate: 3600 },
+  { revalidate: 86400, tags: ["state-stats"] },
 );

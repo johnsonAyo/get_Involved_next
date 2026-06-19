@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { revalidateTag } from "next/cache";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
@@ -25,7 +26,11 @@ export async function GET(request: NextRequest) {
   // Fetch candidates with profile and party joined
   let query = supabase
     .from("candidates")
-    .select('*')
+    .select(`
+      *,
+      profile:profile_id (*),
+      party:party_id (*)
+    `)
     .order("year", { ascending: false, nullsFirst: false });
 
   const position = searchParams.get("position");
@@ -45,23 +50,16 @@ export async function GET(request: NextRequest) {
     // we fetch all and filter in-memory for the studio (manageable dataset).
   }
 
-  const { data, error } = await query;
+  const { data: candidates, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Fetch related data manually to avoid schema cache/foreign key issues
-  const { data: profilesData } = await supabase.from("profile").select("*");
-  const { data: partiesData } = await supabase.from("parties").select("*");
-
-  const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
-  const partiesMap = new Map((partiesData || []).map(p => [p.id, p]));
-
-  const enrichedData = (data || []).map((candidate: any) => ({
+  const enrichedData = (candidates || []).map((candidate: any) => ({
     ...candidate,
-    profile: candidate.profile_id ? profilesMap.get(candidate.profile_id) || null : null,
-    party: candidate.party_id ? partiesMap.get(candidate.party_id) || null : null
+    profile: candidate.profile || null,
+    party: candidate.party || null
   }));
 
   // Apply name search in memory (studio only, not public API)
@@ -125,6 +123,8 @@ export async function POST(request: NextRequest) {
     latest_election_year: body.year ?? null,
     last_known_position: body.position ?? null,
   }).eq("id", body.profile_id);
+
+  revalidateTag("candidates", "max");
 
   return NextResponse.json(data, { status: 201 });
 }

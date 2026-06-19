@@ -4,6 +4,7 @@ import type { Candidate } from "../types/domain";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { getState } from "../data/nigeria.js";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { formatPositionName } from "../utils/formatters";
 
@@ -55,18 +56,22 @@ export function CandidateCard({ candidate, variant = "default" }: Props) {
       style={{ position: "relative" }}
       tabIndex={0}
     >
-      {candidate.profilePictureUrl && (
-        <img 
+      {candidate.profilePictureUrl && candidate.profilePictureUrl.trim() !== "" && (
+        <Image 
           src={candidate.profilePictureUrl} 
           alt={`${candidate.candidateName} profile picture`} 
           className="ds-candidate-card__profile-pic"
+          width={80}
+          height={80}
         />
       )}
-      {logoSrc && (
-        <img 
+      {logoSrc && logoSrc.trim() !== "" && (
+        <Image 
           src={logoSrc} 
           alt={`${candidate.party} logo`} 
           className={`ds-candidate-card__logo ${candidate.profilePictureUrl ? "ds-candidate-card__logo--bottom-right" : ""} ${candidate.partyId === "ndc" ? "ds-candidate-card__logo--ndc" : ""}`}
+          width={64}
+          height={64}
         />
       )}
       <div className="ds-candidate-card__number">{candidate.party}</div>

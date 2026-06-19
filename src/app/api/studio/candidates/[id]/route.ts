@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { revalidateTag } from "next/cache";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
@@ -17,25 +18,19 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
   const { data: candidate, error } = await supabase
     .from("candidates")
-    .select('*')
+    .select(`
+      *,
+      profile:profile_id (*),
+      party:party_id (*)
+    `)
     .eq("id", id)
     .single();
 
-  if (!candidate) {
+  if (error || !candidate) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Fetch related data manually
-  const { data: profile } = await supabase.from("profile").select("*").eq("id", candidate.profile_id).maybeSingle();
-  const { data: party } = await supabase.from("parties").select("*").eq("id", candidate.party_id).maybeSingle();
-
-  const enrichedData = {
-    ...candidate,
-    profile: profile || null,
-    party: party || null
-  };
-
-  return NextResponse.json(enrichedData);
+  return NextResponse.json(candidate);
 }
 
 // ─── PUT /api/studio/candidates/[id] ─────────────────────────────────────────
@@ -81,6 +76,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     })
     .eq("id", body.profile_id);
 
+  revalidateTag("candidates", "max");
+
   return NextResponse.json(data);
 }
 
@@ -94,6 +91,8 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  revalidateTag("candidates", "max");
 
   return NextResponse.json({ success: true });
 }
