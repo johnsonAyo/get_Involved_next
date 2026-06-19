@@ -12,7 +12,11 @@ import { SiteFooter } from "../components/SiteFooter";
 import { useCarouselIndex } from "../hooks/useCarouselIndex";
 import { nigeriaGeo } from "../data/nigeria.js";
 
-import type { Candidate, Fact } from "../types/domain";
+import type {
+  Candidate,
+  Fact,
+  PollingUnitStateStat,
+} from "../types/domain";
 
 const CAROUSEL_DELAY_MS = 60000;
 const MIN_SWIPE_DISTANCE = 50;
@@ -22,13 +26,17 @@ type Props = {
   facts?: Fact[];
   initialLga?: string;
   initialStateId?: string;
+  pollingUnitStateStats?: PollingUnitStateStat[];
 };
+
+const POLLING_UNIT_TOP_LIMIT = 6;
 
 export function HomePage({
   candidates = [],
   facts = [],
   initialLga = "",
   initialStateId = "",
+  pollingUnitStateStats = [],
 }: Props) {
   const router = useRouter();
   const { index: featuredIndex, setIndex: setFeaturedIndex } = useCarouselIndex({
@@ -171,6 +179,36 @@ export function HomePage({
       .sort((a, b) => (b.count !== a.count ? b.count - a.count : a.label.localeCompare(b.label)))
       .slice(0, 5);
   }, [candidates]);
+
+  const topPollingUnitStates = useMemo(() => {
+    if (pollingUnitStateStats.length === 0) return [] as PollingUnitStateStat[];
+    return pollingUnitStateStats.slice(0, POLLING_UNIT_TOP_LIMIT);
+  }, [pollingUnitStateStats]);
+
+  const pollingUnitDatasetTotals = useMemo(() => {
+    if (pollingUnitStateStats.length === 0) {
+      return {
+        states: 0,
+        lgas: 0,
+        wards: 0,
+        pollingUnits: 0,
+      };
+    }
+
+    return pollingUnitStateStats.reduce(
+      (acc, stat) => ({
+        states: acc.states + 1,
+        lgas: acc.lgas + stat.lgaCount,
+        wards: acc.wards + stat.wardCount,
+        pollingUnits: acc.pollingUnits + stat.pollingUnitCount,
+      }),
+      { states: 0, lgas: 0, wards: 0, pollingUnits: 0 },
+    );
+  }, [pollingUnitStateStats]);
+
+  function formatPollingMetric(value: number): string {
+    return value > 0 ? value.toLocaleString("en-NG") : "—";
+  }
 
   return (
     <>
@@ -344,7 +382,99 @@ export function HomePage({
           </div>
         </section>
 
-        <section className="home-journey" aria-labelledby="home-journey-heading">
+        <section
+          className="home-watch"
+          aria-label="Find your polling unit by state"
+        >
+          <div className="home-watch__inner">
+            <header className="home-watch__intro">
+              <div className="home-watch__intro-text">
+                <p className="ds-eyebrow ds-eyebrow--accent">Polling Unit Watch</p>
+                <h2 className="home-watch__title">Find your polling unit</h2>
+                <p className="home-watch__lede">
+                  Save the polling unit where you will vote on election day. The
+                  states with the most LGAs, wards, and polling units are where
+                  the biggest citizen turnouts happen — start there.
+                </p>
+              </div>
+              {pollingUnitDatasetTotals.states > 0 && (
+                <dl
+                  aria-label={`Polling divisions in the top ${topPollingUnitStates.length} states by polling units`}
+                  className="home-watch__totals"
+                >
+                  <div>
+                    <dt>States shown</dt>
+                    <dd>{formatPollingMetric(pollingUnitDatasetTotals.states)}</dd>
+                  </div>
+                  <div>
+                    <dt>LGAs shown</dt>
+                    <dd>{formatPollingMetric(pollingUnitDatasetTotals.lgas)}</dd>
+                  </div>
+                  <div>
+                    <dt>Wards shown</dt>
+                    <dd>{formatPollingMetric(pollingUnitDatasetTotals.wards)}</dd>
+                  </div>
+                  <div>
+                    <dt>Polling units shown</dt>
+                    <dd>{formatPollingMetric(pollingUnitDatasetTotals.pollingUnits)}</dd>
+                  </div>
+                </dl>
+              )}
+            </header>
+
+            {topPollingUnitStates.length > 0 ? (
+              <ol
+                className="home-watch__grid"
+                aria-label="States ranked by polling unit divisions"
+                start={1}
+              >
+                {topPollingUnitStates.map((stat) => (
+                  <li key={stat.stateId}>
+                    <Link
+                      aria-label={`Open ${stat.stateName} polling units on Polling Unit Watch`}
+                      className="home-watch__card"
+                      href={`/polling-units?state=${encodeURIComponent(stat.stateId)}`}
+                    >
+                      <div className="home-watch__card-body">
+                        <h3 className="home-watch__state">{stat.stateName}</h3>
+                        <dl className="home-watch__metrics">
+                          <div className="home-watch__metric">
+                            <dt>LGAs</dt>
+                            <dd>{formatPollingMetric(stat.lgaCount)}</dd>
+                          </div>
+                          <div className="home-watch__metric">
+                            <dt>Wards</dt>
+                            <dd>{formatPollingMetric(stat.wardCount)}</dd>
+                          </div>
+                          <div className="home-watch__metric home-watch__metric--accent">
+                            <dt>Polling units</dt>
+                            <dd>{formatPollingMetric(stat.pollingUnitCount)}</dd>
+                          </div>
+                        </dl>
+                      </div>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="home-watch__empty">
+                Polling-unit totals will appear here once the dataset is
+                imported. You can still search the directory now.
+              </p>
+            )}
+
+            <div className="home-watch__footer">
+              <Link className="ds-button ds-button--primary" href="/polling-units">
+                Open Polling Unit Watch →
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section
+          className="home-journey"
+          aria-labelledby="home-journey-heading"
+        >
           <div className="home-journey__inner">
             <div className="home-journey__intro">
               <p className="ds-eyebrow ds-eyebrow--accent">

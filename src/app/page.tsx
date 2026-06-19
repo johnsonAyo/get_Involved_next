@@ -1,5 +1,9 @@
 import { HomePage } from "./HomeClient";
-import { getCandidates, getFacts } from "@/lib/content-store.server";
+import {
+  getCandidates,
+  getFacts,
+  getPollingUnitStateStats,
+} from "@/lib/content-store.server";
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
@@ -17,7 +21,11 @@ export default async function Page({
   searchParams?: Promise<SearchParams>;
 }) {
   const params = (searchParams ? await searchParams : {}) as SearchParams;
-  const [candidates, facts] = await Promise.all([getCandidates(), getFacts()]);
+  const [candidates, facts, pollingUnitStateStats] = await Promise.all([
+    getCandidates(),
+    getFacts(),
+    getPollingUnitStateStats(),
+  ]);
 
   return (
     <HomePage
@@ -25,6 +33,7 @@ export default async function Page({
       facts={facts}
       initialLga={readSearchParam(params.lga) || ""}
       initialStateId={readSearchParam(params.state) || ""}
+      pollingUnitStateStats={pollingUnitStateStats}
     />
   );
 }

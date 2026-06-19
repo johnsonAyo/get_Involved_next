@@ -84,3 +84,11 @@ export type ReportSubmission = {
   title: string;
   description: string;
 };
+
+export type PollingUnitStateStat = {
+  stateId: string;
+  stateName: string;
+  lgaCount: number;
+  wardCount: number;
+  pollingUnitCount: number;
+};

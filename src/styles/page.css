@@ -2143,6 +2143,12 @@ html[data-theme="dark"] .ds-pill--warning {
   .stats-marquee__track {
     animation: none;
   }
+
+  .home-watch__card,
+  .home-watch__card:hover,
+  .home-watch__card:focus-visible {
+    transition: none;
+  }
 }
 
 /* ─── States Accordion ──────────────────────────────────────────────────────────────── */
@@ -2364,4 +2370,273 @@ html[data-theme="dark"] .ds-pill--warning {
 
 .states-directory__map-svg .nigeria-states-map__feedback {
   display: none !important;
+}
+
+/* ─── Home — Polling Unit Watch overview ──────────────────────────────── */
+
+.home-watch {
+  padding: var(--ds-space-9) var(--ds-space-7) var(--ds-space-9);
+  background:
+    radial-gradient(circle at top right, rgba(0, 135, 83, 0.08), transparent 22rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 245, 245, 0.98));
+  border-top: var(--ds-rule-thin) solid var(--ds-color-ink-a10);
+  border-bottom: var(--ds-rule-thin) solid var(--ds-color-ink-a10);
+}
+
+.home-watch__inner {
+  display: grid;
+  max-width: var(--ds-frame);
+  gap: var(--ds-space-7);
+  margin: 0 auto;
+}
+
+.home-watch__intro {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: var(--ds-space-7);
+  align-items: end;
+}
+
+.home-watch__intro-text {
+  display: grid;
+  gap: var(--ds-space-3);
+  max-width: 36rem;
+}
+
+.home-watch__title {
+  font-family: var(--ds-font-display);
+  font-size: clamp(2.1rem, 4vw, 3.2rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+}
+
+.home-watch__lede {
+  color: var(--ds-color-ink-soft);
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.home-watch__totals {
+  display: grid;
+  align-self: stretch;
+  border-top: var(--ds-rule-thin) solid var(--ds-color-ink);
+  border-left: var(--ds-rule-thin) solid var(--ds-color-ink);
+}
+
+.home-watch__totals > div {
+  display: grid;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-4);
+  border-right: var(--ds-rule-thin) solid var(--ds-color-ink);
+  border-bottom: var(--ds-rule-thin) solid var(--ds-color-ink);
+  background: var(--ds-color-surface);
+}
+
+.home-watch__totals dt {
+  color: var(--ds-color-ink-muted);
+  font-family: var(--ds-font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  line-height: 1.45;
+  text-transform: uppercase;
+}
+
+.home-watch__totals dd {
+  margin: 0;
+  color: var(--ds-color-ink);
+  font-family: var(--ds-font-display);
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.home-watch__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+  border-top: var(--ds-rule-thin) solid var(--ds-color-ink);
+  border-left: var(--ds-rule-thin) solid var(--ds-color-ink);
+}
+
+.home-watch__card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  background: var(--ds-color-surface);
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  border-right: var(--ds-rule-thin) solid var(--ds-color-ink);
+  border-bottom: var(--ds-rule-thin) solid var(--ds-color-ink);
+  transition:
+    background var(--ds-motion-fast) var(--ds-ease-standard);
+}
+
+.home-watch__card:hover {
+  background: rgba(0, 135, 83, 0.05);
+  outline: none;
+  z-index: 1;
+}
+
+.home-watch__card:focus-visible {
+  outline: none;
+  z-index: 1;
+  box-shadow: inset 0 0 0 3px var(--ds-color-accent);
+  background: rgba(0, 135, 83, 0.05);
+}
+
+.home-watch__card-body {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: var(--ds-space-1);
+  padding: var(--ds-space-2) 0 var(--ds-space-5);
+  min-width: 0;
+}
+
+.home-watch__state {
+  font-family: var(--ds-font-display);
+  font-size: clamp(1.15rem, 1.5vw, 1.45rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--ds-color-ink);
+  text-align: center;
+  text-wrap: balance;
+  padding: 0 var(--ds-space-6);
+}
+
+.home-watch__metrics {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-self: start;
+  gap: 0;
+  padding: var(--ds-space-3) var(--ds-space-6);
+  margin: 0;
+}
+
+.home-watch__metrics::before {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: var(--ds-rule-accent);
+  background: var(--ds-color-accent);
+  content: "";
+}
+
+.home-watch__metric {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 var(--ds-space-3);
+}
+
+.home-watch__metric dt {
+  font-family: var(--ds-font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.4;
+  text-transform: uppercase;
+  color: var(--ds-color-ink-muted);
+  white-space: nowrap;
+}
+
+.home-watch__metric dd {
+  margin: 0;
+  font-family: var(--ds-font-display);
+  font-size: clamp(2.15rem, 2.7vw, 2.85rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  color: var(--ds-color-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.home-watch__metric--accent dd {
+  color: var(--ds-color-accent);
+}
+
+.home-watch__empty {
+  padding: var(--ds-space-6);
+  border: var(--ds-rule-thin) dashed var(--ds-color-ink-a10);
+  background: var(--ds-color-surface);
+  color: var(--ds-color-ink-soft);
+  line-height: 1.65;
+}
+
+.home-watch__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ds-space-5);
+  padding-top: var(--ds-space-2);
+}
+
+html[data-theme="dark"] .home-watch {
+  background:
+    radial-gradient(circle at top right, rgba(33, 185, 113, 0.12), transparent 22rem),
+    linear-gradient(180deg, rgba(16, 26, 42, 0.94), rgba(11, 19, 32, 0.98));
+}
+
+html[data-theme="dark"] .home-watch__totals > div,
+html[data-theme="dark"] .home-watch__card,
+html[data-theme="dark"] .home-watch__empty {
+  background: var(--ds-color-night-elevated);
+}
+
+@media (max-width: 64rem) {
+  .home-watch__intro {
+    grid-template-columns: 1fr;
+    gap: var(--ds-space-5);
+    align-items: start;
+  }
+
+  .home-watch__totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-watch__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-explore__inner,
+  .home-watch__inner {
+    padding-right: var(--ds-space-6);
+    padding-left: var(--ds-space-6);
+  }
+}
+
+@media (max-width: 48rem) {
+  .home-watch {
+    padding: var(--ds-space-8) var(--ds-space-4) var(--ds-space-7);
+  }
+
+  .home-watch__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-watch__totals {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 38.75rem) {
+  .home-watch__metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-watch__metric dd {
+    font-size: 1.95rem;
+  }
 }

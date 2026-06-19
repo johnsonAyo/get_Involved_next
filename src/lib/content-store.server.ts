@@ -1,7 +1,15 @@
 
-import type { Candidate, DirectoryStateOption, Fact, Party, PollingUnit } from "@/types/domain";
+import type {
+  Candidate,
+  DirectoryStateOption,
+  Fact,
+  Party,
+  PollingUnit,
+  PollingUnitStateStat,
+} from "@/types/domain";
 import { createClient } from "@supabase/supabase-js";
 import { nigeriaGeo } from "@/data/nigeria.js";
+import { unstable_cache } from "next/cache";
 
 function hasServerSupabaseConfig() {
   return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SECRET_KEY;
@@ -523,3 +531,137 @@ export async function getDirectoryStates(): Promise<DirectoryStateOption[]> {
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((state) => ({ id: state.id, name: state.name }));
 }
+
+// Re-export so client/server can keep the type boundary clean.
+export type { PollingUnitStateStat } from "@/types/domain";
+
+const POLLING_UNIT_STATS_PAGE_SIZE = 1000;
+const POLLING_UNIT_STATS_MAX_ROWS = 200_000;
+
+type StateAggregate = {
+  stateName: string;
+  wards: Set<string>;
+  lgas: Set<string>;
+  count: number;
+};
+
+/**
+ * Fetch per-state aggregates for the polling_units dataset.
+ * Returns each state with its LGA, ward, and polling-unit counts.
+ *
+ * The result is cached at the framework level (revalidated hourly) so that
+ * the home page does not run a full paginated scan on every request.
+ *
+ * When Supabase is not configured or the table cannot be read, we fall back
+ * to a model based on `nigeriaGeo` LGA counts so the UI still has data.
+ */
+async function fetchPollingUnitStateStats(): Promise<PollingUnitStateStat[]> {
+  const fallback = (): PollingUnitStateStat[] =>
+    nigeriaGeo
+      .map((state) => ({
+        stateId: state.id,
+        stateName: state.name,
+        lgaCount: state.lgas.length,
+        wardCount: 0,
+        pollingUnitCount: 0,
+      }))
+      .sort((a, b) =>
+        b.lgaCount !== a.lgaCount
+          ? b.lgaCount - a.lgaCount
+          : a.stateName.localeCompare(b.stateName),
+      );
+
+  if (!hasServerSupabaseConfig()) {
+    return fallback();
+  }
+
+  try {
+    const supabase = createSupabaseServerClient();
+    if (!supabase) return fallback();
+
+    const aggregates = new Map<string, StateAggregate>();
+
+    // Seed with static metadata so states without any rows still appear.
+    for (const state of nigeriaGeo) {
+      aggregates.set(state.id, {
+        stateName: state.name,
+        wards: new Set<string>(),
+        lgas: new Set(state.lgas.map((lga) => lga.toLowerCase())),
+        count: 0,
+      });
+    }
+
+    let from = 0;
+    let fetched = 0;
+
+    while (fetched < POLLING_UNIT_STATS_MAX_ROWS) {
+      const { data, error } = await supabase
+        .from("polling_units")
+        .select("state_slug, state, lga, ward")
+        .range(from, from + POLLING_UNIT_STATS_PAGE_SIZE - 1);
+
+      if (error || !data || data.length === 0) {
+        break;
+      }
+
+      for (const row of data) {
+        const slug = (row.state_slug as string | null)?.toLowerCase();
+        if (!slug) continue;
+        let bucket = aggregates.get(slug);
+        if (!bucket) {
+          bucket = {
+            stateName:
+              typeof row.state === "string" && row.state.length > 0
+                ? row.state
+                : slug,
+            wards: new Set<string>(),
+            lgas: new Set<string>(),
+            count: 0,
+          };
+          aggregates.set(slug, bucket);
+        }
+        bucket.count += 1;
+        if (row.ward) bucket.wards.add(String(row.ward));
+        if (row.lga) bucket.lgas.add(String(row.lga).toLowerCase());
+      }
+
+      fetched += data.length;
+      if (data.length < POLLING_UNIT_STATS_PAGE_SIZE) {
+        break;
+      }
+      from += POLLING_UNIT_STATS_PAGE_SIZE;
+    }
+
+    const results: PollingUnitStateStat[] = [];
+    for (const [stateId, bucket] of aggregates.entries()) {
+      const staticState = nigeriaGeo.find((state) => state.id === stateId);
+      results.push({
+        stateId,
+        stateName: staticState?.name ?? bucket.stateName ?? stateId,
+        // Always trust the static LGA list because the polling_units table
+        // only contains rows for states that have been imported so far.
+        lgaCount: staticState ? staticState.lgas.length : bucket.lgas.size,
+        wardCount: bucket.wards.size,
+        pollingUnitCount: bucket.count,
+      });
+    }
+
+    return results.sort((a, b) => {
+      if (b.pollingUnitCount !== a.pollingUnitCount) {
+        return b.pollingUnitCount - a.pollingUnitCount;
+      }
+      if (b.lgaCount !== a.lgaCount) {
+        return b.lgaCount - a.lgaCount;
+      }
+      return a.stateName.localeCompare(b.stateName);
+    });
+  } catch {
+    return fallback();
+  }
+}
+
+export const getPollingUnitStateStats = unstable_cache(
+  fetchPollingUnitStateStats,
+  ["polling-unit-state-stats"],
+  { revalidate: 3600 },
+);
