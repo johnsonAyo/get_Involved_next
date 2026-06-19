@@ -8,8 +8,8 @@ export function SiteFooter() {
         <div className="site-footer__brand">
           <Wordmark className="ds-wordmark--footer" />
           <p className="site-footer__tagline">
-            Search candidates. Filter by state and local government. Know who is
-            on your ballot.
+            Know the candidates. Find your polling unit. Help preserve the
+            public record.
           </p>
         </div>
         <nav className="site-footer__nav" aria-label="Footer">
@@ -27,6 +27,11 @@ export function SiteFooter() {
             <li>
               <Link href="/candidates">
                 Candidates
+              </Link>
+            </li>
+            <li>
+              <Link href="/polling-units">
+                Polling Unit Watch
               </Link>
             </li>
             <li>

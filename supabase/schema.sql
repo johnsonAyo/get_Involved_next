@@ -245,6 +245,104 @@ create table if not exists public.election_facts (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
+-- ─── Geographic Hierarchy ────────────────────────────────────────────────────
+-- Normalised lookup tables for State → LGA → Ward.
+-- Populated from the polling_units import and used as the canonical source for
+-- all dropdown/select menus across the app.
+
+create table if not exists public.geo_states (
+  id    text        primary key,         -- slug, e.g. "lagos" (matches state_slug)
+  name  text        not null,            -- display name, e.g. "Lagos"
+  code  text                             -- state_code if available
+);
+
+create table if not exists public.geo_lgas (
+  id        uuid        primary key default gen_random_uuid(),
+  state_id  text        not null references public.geo_states(id) on delete cascade on update cascade,
+  name      text        not null,
+  unique (state_id, name)
+);
+
+create table if not exists public.geo_wards (
+  id      uuid        primary key default gen_random_uuid(),
+  lga_id  uuid        not null references public.geo_lgas(id) on delete cascade on update cascade,
+  name    text        not null,
+  unique (lga_id, name)
+);
+
+create index if not exists geo_lgas_state_id_idx on public.geo_lgas (state_id);
+create index if not exists geo_lgas_name_idx     on public.geo_lgas (name);
+create index if not exists geo_wards_lga_id_idx  on public.geo_wards (lga_id);
+create index if not exists geo_wards_name_idx    on public.geo_wards (name);
+
+-- ─── Polling Units ───────────────────────────────────────────────────────────
+-- Official polling-unit directory used as the anchor for election-day reports.
+-- Stored in a slim table and exposed through a compatibility view so the app can
+-- read state/LGA/ward names without repeating them on every polling-unit row.
+
+create table if not exists public.polling_units_core (
+  id                    text        primary key,
+  polling_unit_code     text,
+  polling_unit_name     text        not null,
+  remark                text,
+  ward_id               uuid        not null references public.geo_wards(id) on delete restrict on update cascade,
+  address               text,
+  latitude              double precision,
+  longitude             double precision,
+  coordinate_quality    text,
+  coordinate_confidence numeric,
+  coordinate_source     text,
+  coordinate_label      text,
+  coordinate_match      text,
+  source_snapshot_url   text,
+  source_generated_at   timestamptz,
+  created_at            timestamptz not null default timezone('utc', now()),
+  updated_at            timestamptz not null default timezone('utc', now())
+);
+
+create unique index if not exists polling_units_core_code_unique_idx
+  on public.polling_units_core (polling_unit_code)
+  where polling_unit_code is not null;
+
+create index if not exists polling_units_core_ward_id_idx
+  on public.polling_units_core (ward_id);
+
+create index if not exists polling_units_core_ward_id_id_idx
+  on public.polling_units_core (ward_id, id);
+
+create index if not exists polling_units_core_location_idx
+  on public.polling_units_core (latitude, longitude)
+  where latitude is not null and longitude is not null;
+
+create or replace view public.polling_units
+with (security_invoker = true) as
+select
+  pu.id,
+  pu.polling_unit_code,
+  pu.polling_unit_name,
+  pu.remark,
+  gs.code as state_code,
+  gs.name as state,
+  gs.id as state_slug,
+  gl.name as lga,
+  gw.name as ward,
+  pu.address,
+  pu.latitude,
+  pu.longitude,
+  pu.coordinate_quality,
+  pu.coordinate_confidence,
+  pu.coordinate_source,
+  pu.coordinate_label,
+  pu.coordinate_match,
+  pu.source_snapshot_url,
+  pu.source_generated_at,
+  pu.created_at,
+  pu.updated_at
+from public.polling_units_core pu
+join public.geo_wards gw on gw.id = pu.ward_id
+join public.geo_lgas gl on gl.id = gw.lga_id
+join public.geo_states gs on gs.id = gl.state_id;
+
 -- ─── Row Level Security (RLS) ────────────────────────────────────────────────
 
 alter table public.parties enable row level security;
@@ -252,6 +350,10 @@ alter table public.profile enable row level security;
 alter table public.candidates enable row level security;
 alter table public.candidate_applications enable row level security;
 alter table public.election_facts enable row level security;
+alter table public.polling_units_core enable row level security;
+alter table public.geo_states enable row level security;
+alter table public.geo_lgas enable row level security;
+alter table public.geo_wards enable row level security;
 
 -- Drop existing policies to ensure idempotency
 drop policy if exists "Allow public select on parties" on public.parties;
@@ -259,14 +361,23 @@ drop policy if exists "Allow public select on profile" on public.profile;
 drop policy if exists "Allow public select on candidates" on public.candidates;
 drop policy if exists "Allow public select on candidate_applications" on public.candidate_applications;
 drop policy if exists "Allow public select on election_facts" on public.election_facts;
+drop policy if exists "Allow public select on polling_units_core" on public.polling_units_core;
 
 drop policy if exists "Allow auth write on parties" on public.parties;
 drop policy if exists "Allow auth write on profile" on public.profile;
 drop policy if exists "Allow auth write on candidates" on public.candidates;
 drop policy if exists "Allow auth write on candidate_applications" on public.candidate_applications;
 drop policy if exists "Allow auth write on election_facts" on public.election_facts;
+drop policy if exists "Allow auth write on polling_units_core" on public.polling_units_core;
 
 drop policy if exists "Allow public insert on candidate_applications" on public.candidate_applications;
+
+drop policy if exists "Allow public select on geo_states" on public.geo_states;
+drop policy if exists "Allow public select on geo_lgas"   on public.geo_lgas;
+drop policy if exists "Allow public select on geo_wards"  on public.geo_wards;
+drop policy if exists "Allow auth write on geo_states" on public.geo_states;
+drop policy if exists "Allow auth write on geo_lgas"   on public.geo_lgas;
+drop policy if exists "Allow auth write on geo_wards"  on public.geo_wards;
 
 -- Public READ (SELECT) access for all tables
 create policy "Allow public select on parties" on public.parties for select using (true);
@@ -274,6 +385,10 @@ create policy "Allow public select on profile" on public.profile for select usin
 create policy "Allow public select on candidates" on public.candidates for select using (true);
 create policy "Allow public select on candidate_applications" on public.candidate_applications for select using (true);
 create policy "Allow public select on election_facts" on public.election_facts for select using (true);
+create policy "Allow public select on polling_units_core" on public.polling_units_core for select using (true);
+create policy "Allow public select on geo_states" on public.geo_states for select using (true);
+create policy "Allow public select on geo_lgas"   on public.geo_lgas   for select using (true);
+create policy "Allow public select on geo_wards"  on public.geo_wards  for select using (true);
 
 -- Authenticated WRITE (ALL) access for all tables
 create policy "Allow auth write on parties" on public.parties for all to authenticated using (true) with check (true);
@@ -281,6 +396,10 @@ create policy "Allow auth write on profile" on public.profile for all to authent
 create policy "Allow auth write on candidates" on public.candidates for all to authenticated using (true) with check (true);
 create policy "Allow auth write on candidate_applications" on public.candidate_applications for all to authenticated using (true) with check (true);
 create policy "Allow auth write on election_facts" on public.election_facts for all to authenticated using (true) with check (true);
+create policy "Allow auth write on polling_units_core" on public.polling_units_core for all to authenticated using (true) with check (true);
+create policy "Allow auth write on geo_states" on public.geo_states for all to authenticated using (true) with check (true);
+create policy "Allow auth write on geo_lgas"   on public.geo_lgas   for all to authenticated using (true) with check (true);
+create policy "Allow auth write on geo_wards"  on public.geo_wards  for all to authenticated using (true) with check (true);
 
 -- Public WRITE (INSERT) access for candidate_applications only
 create policy "Allow public insert on candidate_applications" on public.candidate_applications for insert to public with check (true);

@@ -41,6 +41,28 @@ export type Fact = {
   source?: string;
 };
 
+export type PollingUnit = {
+  id: Id;
+  pollingUnitCode?: string;
+  pollingUnitName: string;
+  remark?: string;
+  stateCode?: string;
+  state: string;
+  stateSlug: string;
+  lga: string;
+  ward: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  coordinateQuality?: string;
+  coordinateConfidence?: number;
+  coordinateSource?: string;
+  coordinateLabel?: string;
+  coordinateMatch?: string;
+  sourceSnapshotUrl?: string;
+  sourceGeneratedAt?: string;
+};
+
 export type DirectoryStateOption = {
   id: string;
   name: string;

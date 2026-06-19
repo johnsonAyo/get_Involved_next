@@ -127,6 +127,16 @@ export function HomePage({
       detail: "Local governments",
     },
     {
+      label: "Wards",
+      value: "8,809",
+      detail: "Electoral wards",
+    },
+    {
+      label: "Polling units",
+      value: "176,750",
+      detail: "Voting locations",
+    },
+    {
       label: "Senate seats",
       value: "109",
       detail: "National Assembly",

@@ -28,6 +28,11 @@ export function SiteHeader() {
                   Candidates
                 </Link>
               </li>
+              <li className="site-header__nav-item">
+                <Link href="/polling-units">
+                  PU Watch
+                </Link>
+              </li>
               <li className="site-header__nav-about">
                 <Link href="/about">
                   About
