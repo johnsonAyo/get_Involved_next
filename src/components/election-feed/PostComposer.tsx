@@ -568,7 +568,9 @@ export function PostComposer({ onPosted }: Props) {
                           setBody("");
                         } else {
                           setSelectedId(c.id);
-                          setBody(c.summary);
+                          if (!c.id.startsWith("novel-")) {
+                            setBody(c.summary);
+                          }
                         }
                       }}
                       role="radio"

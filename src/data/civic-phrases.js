@@ -209,9 +209,7 @@ export const CIVIC_SUMMARIES = [
 ];
 
 /**
- * Pre-built normalized lookup: lowercased keywords with summary pair.
- * Built once at module-load; consumers don't need to re-normalize.
- *
+
  * @returns {Array<{ keyword: string, id: string, summary: string }>}
  */
 export function buildKeywordIndex() {
@@ -225,19 +223,24 @@ export function buildKeywordIndex() {
         keywordLength: keyword.length,
       });
     }
+
+    const summaryAsKeyword = entry.summary.toLowerCase().trim();
+    if (summaryAsKeyword.length >= MIN_KEYWORD_LENGTH && !entry.keywords.some((kw) => kw.toLowerCase().trim() === summaryAsKeyword)) {
+      entries.push({
+        keyword: summaryAsKeyword,
+        id: entry.id,
+        summary: entry.summary,
+        keywordLength: entry.summary.length,
+      });
+    }
   }
-  // Longest keywords first so "card reader jammed" wins over "card reader".
   entries.sort((a, b) => b.keywordLength - a.keywordLength);
   return entries;
 }
 
+export const MIN_KEYWORD_LENGTH = 4;
 /**
- * Normalize a body for substring matching:
- *   - lowercase
- *   - trim leading/trailing whitespace
- *   - collapse multiple spaces to one
- * Length must remain ≤30 chars client-side before this call.
- *
+
  * @param {string} body
  * @returns {string}
  */

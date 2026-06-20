@@ -736,19 +736,6 @@ html[data-theme="dark"] .election-feed__filter-reset:focus-visible {
   border-color: var(--ds-color-ink);
 }
 
-.post-composer__chip.is-novel {
-  border-style: dashed;
-  font-style: italic;
-}
-
-.post-composer__chip.is-novel.is-selected {
-  background: var(--ds-color-accent);
-  color: var(--ds-color-accent-ink);
-  border-color: var(--ds-color-accent);
-  border-style: solid;
-  font-style: normal;
-}
-
 .post-composer__actions {
   display: flex;
   justify-content: flex-end;

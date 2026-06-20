@@ -1,5 +1,9 @@
 
-import { buildKeywordIndex, normalizeBody } from "@/data/civic-phrases";
+import {
+  MIN_KEYWORD_LENGTH,
+  buildKeywordIndex,
+  normalizeBody,
+} from "@/data/civic-phrases";
 
 /**
  * Canonical civic-phrase row shape (mirrors `CIVIC_SUMMARIES[i]` in
@@ -61,17 +65,38 @@ export function match(body: string, limit = 5): MatchedSummary[] {
  * `original` body so the composer can show a "novel / fallback"
  * chip alongside the canonical picks.
  *
- * The composer renders:
- *   1. {@link match}'s top result; if N ≥ 1
- *   2. Plus the `novel: <lowercased body>` chip if N < limit (still
- *      capped so the picker isn't bloated).
- *
+ * Behaviour:
+ *   1. The top-N canonical matches from {@link match}.
+ *   2. Plus a `novel: <lowercased body>` chip iff the voter's body
+
  * @param body  Raw, ≤30-char user input.
  * @returns Array sized 1…limit+1 (depending on match rate).
  */
 export function composerSuggestions(body: string): MatchedSummary[] {
   const limit = 5;
-  return match(body, limit);
+  const initial = match(body, limit);
+  const normalized = normalizeBody(body);
+
+  const hasExactCanonical = initial.some(
+    (m) => m.summary.toLowerCase() === normalized,
+  );
+
+  if (
+    !hasExactCanonical &&
+    initial.length < limit &&
+    normalized.length >= MIN_KEYWORD_LENGTH
+  ) {
+    return [
+      ...initial,
+      {
+        id: `novel-${normalized}`,
+        summary: body.trim(),
+        matchedKeyword: "",
+      },
+    ];
+  }
+
+  return initial;
 }
 const BANNED_TERMS = [
   "kill",
