@@ -59,6 +59,20 @@ export function ElectionFeedWidget({ states }: Props) {
     };
   }, [isOpen]);
 
+  // Allow the post composer (and other in-flow surfaces) to dismiss the
+  // widget programmatically — e.g. when a user clicks the empty-state
+  // "Open the polling-unit directory" button we want the live-feed overlay
+  // to close, not stay open over the directory page.
+  useEffect(() => {
+    function handleCloseRequest() {
+      setIsOpen(false);
+    }
+    window.addEventListener("election-feed-close", handleCloseRequest);
+    return () => {
+      window.removeEventListener("election-feed-close", handleCloseRequest);
+    };
+  }, []);
+
   function close() {
     setIsOpen(false);
   }

@@ -10,13 +10,13 @@ import {
   suggestSummaries,
 } from "@/app/actions/feed";
 import type { MatchedSummary } from "@/lib/summary-matcher";
+import { ConfirmDialog } from "./ConfirmDialog";
+import { ACTIVE_ELECTION } from "./mockMessages";
 
 const SAVED_POLLING_UNIT_KEY = "get-involved:saved-polling-unit";
 const FEED_SESSION_KEY = "get-involved:feed-session";
-const PANEL_OPEN_STORAGE_KEY = "get-involved:election-feed-open";
 
 const MIN_SEARCH_LENGTH = 4;
-const MIN_SUGGESTIONS_LIMIT = 3;
 
 const BASE_SUGGESTIONS: MatchedSummary[] = [
   {
@@ -121,13 +121,9 @@ export function PostComposer({ onPosted }: Props) {
   const router = useRouter();
 
   function navigateToDirectory() {
-    try {
-      window.localStorage.setItem(PANEL_OPEN_STORAGE_KEY, "0");
-    } catch {
-    }
-    if (onPosted) {
-      onPosted();
-    }
+    // Dispatch a window event; ElectionFeedWidget listens and closes itself,
+    // so the live-feed overlay doesn't stay open over the directory page.
+    window.dispatchEvent(new CustomEvent("election-feed-close"));
     router.push("/polling-units");
   }
 
@@ -151,6 +147,7 @@ export function PostComposer({ onPosted }: Props) {
   });
   const [isVerifyingLocation, setIsVerifyingLocation] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [showJoinConfirm, setShowJoinConfirm] = useState(false);
 
   useEffect(() => {
     function handleSaved(event: Event) {
@@ -233,13 +230,18 @@ export function PostComposer({ onPosted }: Props) {
     };
   }, [savedUnit]);
 
-  async function handleJoin() {
+  function openJoinConfirm() {
     if (!savedUnit || !sessionTokenRef.current) return;
+    setShowJoinConfirm(true);
+  }
 
-    const confirmationMessage = "Are you sure you want to join this polling unit? Once you join, you will not be able to save or join a new polling unit on this device for this election.";
-    if (!window.confirm(confirmationMessage)) {
-      return;
-    }
+  function cancelJoinConfirm() {
+    setShowJoinConfirm(false);
+  }
+
+  async function confirmJoinAndVerify() {
+    if (!savedUnit || !sessionTokenRef.current) return;
+    setShowJoinConfirm(false);
 
     setIsVerifyingLocation(true);
     setLocationError(null);
@@ -265,9 +267,10 @@ export function PostComposer({ onPosted }: Props) {
 
         const isDevelopment = process.env.NODE_ENV !== "production" || (typeof window !== "undefined" && window.location.hostname === "localhost");
         if (distance > MAX_JOIN_RADIUS_METERS && !isDevelopment) {
-          const distanceKm = (distance / 1000).toFixed(2);
+          const distanceKm = Math.round(distance / 1000);
+          const unit = distanceKm === 1 ? "kilometer" : "kilometers";
           setLocationError(
-            `You are ${distanceKm} km away. You must be physically at the location (within 1 km) to join.`
+            `You are approximately ${distanceKm} ${unit} away. You must be physically at the location (within 1 kilometer) to join.`
           );
           setIsVerifyingLocation(false);
           return;
@@ -434,14 +437,29 @@ export function PostComposer({ onPosted }: Props) {
     }
   }
 
+  const joinConfirmSheet = (
+    <ConfirmDialog
+      cancelLabel="Go back"
+      confirmLabel="Yes, verify & join this unit"
+      eyebrow="Join unit"
+      isBusy={isVerifyingLocation}
+      message="Once you join, you cannot change your polling unit for this election. Make sure you are physically at the unit."
+      onCancel={cancelJoinConfirm}
+      onConfirm={() => {
+        void confirmJoinAndVerify();
+      }}
+      open={showJoinConfirm}
+      title="Commit to this unit?"
+    />
+  );
+
   if (!savedUnit) {
     return (
       <div className="post-composer post-composer--gated" role="status">
-        <p className="ds-eyebrow ds-eyebrow--accent">Save a polling unit to post</p>
+        <p className="ds-eyebrow ds-eyebrow--accent">Join a polling unit to post updates</p>
         <p className="post-composer__gate-copy">
-          Updates here are anchored to a specific polling unit you have saved on
-          this device. Pick a unit from the directory, save it on its profile
-          page, and the composer comes alive here.
+          Updates are tailored to a specific polling unit. Pick a polling unit,
+          save it on its profile page, and click here to join.
         </p>
         <button
           type="button"
@@ -467,6 +485,10 @@ export function PostComposer({ onPosted }: Props) {
 
   if (!alreadyJoined) {
     if (!joinEnabled) {
+      const displayState = savedUnit.state.endsWith(" State")
+        ? savedUnit.state
+        : `${savedUnit.state} State`;
+
       return (
         <div className="post-composer post-composer--gated" role="status">
           <header className="post-composer__head">
@@ -476,8 +498,14 @@ export function PostComposer({ onPosted }: Props) {
             </p>
           </header>
           <p className="post-composer__gate-copy">
-            Posting live updates is currently closed. It will be open on Election Day.
+            Posting live updates is currently closed for <strong>{displayState}</strong>. It will be open on the election date.
           </p>
+          <div className="post-composer__active-notice">
+            <p className="ds-eyebrow ds-eyebrow--accent">Active Election</p>
+            <p className="post-composer__gate-copy">
+              Live updates are currently open for <strong>{ACTIVE_ELECTION.state}</strong> as it is their election.
+            </p>
+          </div>
         </div>
       );
     }
@@ -496,7 +524,7 @@ export function PostComposer({ onPosted }: Props) {
         <button
           type="button"
           className="ds-button ds-button--primary"
-          onClick={handleJoin}
+          onClick={openJoinConfirm}
           disabled={isVerifyingLocation}
         >
           {isVerifyingLocation ? "Verifying Location..." : "Verify Location & Join"}
@@ -506,6 +534,7 @@ export function PostComposer({ onPosted }: Props) {
             {locationError}
           </p>
         )}
+        {joinConfirmSheet}
       </div>
     );
   }

@@ -76,8 +76,40 @@ export async function suggestSummaries(
   return composerSuggestions(trimmed);
 }
 
+function romanize(num: number): string {
+  const lookup: [number, string][] = [
+    [1000, "m"],
+    [900, "cm"],
+    [500, "d"],
+    [400, "cd"],
+    [100, "c"],
+    [90, "xc"],
+    [50, "l"],
+    [40, "xl"],
+    [10, "x"],
+    [9, "ix"],
+    [5, "v"],
+    [4, "iv"],
+    [1, "i"]
+  ];
+  let roman = "";
+  let n = num;
+  for (const [value, letter] of lookup) {
+    while (n >= value) {
+      roman += letter;
+      n -= value;
+    }
+  }
+  return roman;
+}
+
 function generateFriendlyPosterLabel(stateName: string, counter: number): string {
-  return `Voter-${stateName || "State"} ${counter}`;
+  const cleanState = (stateName || "state")
+    .toLowerCase()
+    .trim()
+    .replace(/\s+state$/, "")
+    .replace(/\s+/g, "-");
+  return `watch-${cleanState}-${romanize(counter)}`;
 }
 
 // ─── Hash helpers (for fingerprint + dedup) ───────────────────────────────
@@ -92,34 +124,11 @@ function fingerprintFromRequest(ip: string | null, ua: string | null): string {
 
 // ─── publishFeedPost ──────────────────────────────────────────────────────
 
-/**
- * Validation rules (server-authoritative):
- *   • body      : 4 ≤ length ≤ 30
- *   • summary   : 4 ≤ length ≤ 60
- *   • summary passes `containsHostileContent` (cheap pre-check;
- *     the real moderation is the studio slice-3 queue)
- *   • pu_id     : must resolve to a real `polling_units_core.id`
- *   • session_token : client-supplied UUID, or auto-minted if absent
- *   • Rate-limit per session_token (1 post / PU / 60s)
- *   • Content-dedup: same `(body|summary)` per session_token in 5min
- *
- * Returns `PublishResult` so the composer can render a typed status
- * — never throws (the action rejects by returning `{ ok: false }`).
- */
-// ─── getOrMintPosterLabel ─────────────────────────────────────────────────
-
 export type PosterLabelResult =
   | { ok: true; poster_label: string; counter: number }
   | { ok: false; error: string };
 
-/**
- * Idempotent-ish helper that returns the poster_handle-and-counter
- * for `(pu_id, session_token)`. If a row already exists for this
- * pair, returns it. If not, mints a new counter and inserts the row.
- *
- * The composer calls this on mount so the user can preview their
- * handle in the "You'll post as PU005-NNN" line before submitting.
- */
+
 export async function getOrMintPosterLabel(args: {
   pu_id: string;
   session_token: string;
