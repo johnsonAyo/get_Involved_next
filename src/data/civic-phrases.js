@@ -1,26 +1,4 @@
-/**
- * Canonical civic-phrase vocabulary for the Election Watch summary
- * matcher. No LLM call happens on the live composer path — the
- * `summary-matcher` walks this table's keyword trie against the
- * user's ≤30-char body and returns the top 3-5 matches.
- *
- * Each entry is a SHORT human-voiced sentence (NOT a kebab-cased
- * machine label) so the chip rendered in the composer + feed reads
- * like real civic voice: "the queue is slow", not "queue-slow".
- *
- * Two stable columns (the `id` + the `summary` text) are persisted
- * together. `id` is for moderator/aggregator queries (`GROUP BY id`,
- * merge-into-canonical). `summary` is for UI rendering + the
- * "common occurrence" surface's row text.
- *
- * Manual curation. First-pass seed (30 entries). Expansion plan:
- * weekly curator batch script (`scripts/cluster-novel-summaries.ts`)
- * surfaces `novel:` body buckets; a moderator promotes the most
- * repeated into this table. The vocabulary grows from real usage.
- *
- * Anti-pattern: don't add machine labels here. Every summary should
- * read like a sentence a citizen might actually type.
- */
+
 
 export const CIVIC_SUMMARIES = [
   // Queue flow
@@ -192,6 +170,41 @@ export const CIVIC_SUMMARIES = [
     id: "restroom-issue",
     summary: "restroom is out of order",
     keywords: ["no restroom", "toilet bad", "restroom issue", "no facilities"],
+  },
+  {
+    id: "counting-started",
+    summary: "results counting has started",
+    keywords: ["counting started", "counting votes", "sorting ballots", "sorting votes", "tallying started"],
+  },
+  {
+    id: "results-pasted",
+    summary: "official results are pasted",
+    keywords: ["results pasted", "pasted results", "pasted sheets", "result sheet pasted", "inec pasted"],
+  },
+  {
+    id: "party-agents-present",
+    summary: "party agents are present",
+    keywords: ["party agents", "agents present", "apc agent", "pdp agent", "lp agent"],
+  },
+  {
+    id: "bvas-failed",
+    summary: "BVAS authentication issue",
+    keywords: ["bvas issue", "bvas failed", "bvas not working", "bvas error", "fingerprint failed", "face capture failed"],
+  },
+  {
+    id: "bvas-ok",
+    summary: "BVAS machine working well",
+    keywords: ["bvas ok", "bvas working", "bvas fine", "bvas authentication ok"],
+  },
+  {
+    id: "materials-missing",
+    summary: "critical materials missing",
+    keywords: ["materials missing", "no papers", "no ink", "missing sheets", "sheets not here"],
+  },
+  {
+    id: "assisted-voting",
+    summary: "assisted voting ongoing",
+    keywords: ["assisted voting", "elderly assisted", "disabled assisted", "pregnant priority"],
   },
 ];
 

@@ -231,19 +231,39 @@ export function PollingUnitSearchForm({
 
 export function SavedPollingUnitCard() {
   const [savedUnit, setSavedUnit] = useState<SavedPollingUnit | null>(null);
+  const [joinedId, setJoinedId] = useState<string | null>(null);
 
   useEffect(() => {
     setSavedUnit(readSavedPollingUnit());
-
-    function handleSaved(event: Event) {
-      setSavedUnit((event as CustomEvent<SavedPollingUnit>).detail);
+    if (typeof window !== "undefined") {
+      setJoinedId(window.localStorage.getItem("get-involved:joined-polling-unit-id"));
     }
 
-    window.addEventListener("polling-unit-saved", handleSaved);
-    return () => window.removeEventListener("polling-unit-saved", handleSaved);
+    function handleSaved(event: Event) {
+      const detail = (event as CustomEvent<SavedPollingUnit | null>).detail ?? null;
+      const joined = window.localStorage.getItem("get-involved:joined-polling-unit-id");
+      if (joined && (!detail || detail.id !== joined)) {
+        return;
+      }
+      setSavedUnit(detail);
+    }
+
+    function handleJoined(event: Event) {
+      const detail = (event as CustomEvent<{ pu_id: string } | null>).detail;
+      setJoinedId(detail?.pu_id ?? null);
+    }
+
+    window.addEventListener("polling-unit-saved", handleSaved as EventListener);
+    window.addEventListener("polling-unit-joined", handleJoined as EventListener);
+    return () => {
+      window.removeEventListener("polling-unit-saved", handleSaved as EventListener);
+      window.removeEventListener("polling-unit-joined", handleJoined as EventListener);
+    };
   }, []);
 
   if (!savedUnit) return null;
+
+  const isJoined = Boolean(joinedId && joinedId === savedUnit.id);
 
   return (
     <section className="polling-watch__saved" aria-label="Saved polling unit">
@@ -259,16 +279,18 @@ export function SavedPollingUnitCard() {
         <Link className="ds-button ds-button--ghost polling-watch__saved-link" href={pollingUnitPath(savedUnit)}>
           Open saved unit
         </Link>
-        <button
-          className="ds-button ds-button--ghost"
-          onClick={() => {
-            window.localStorage.removeItem(SAVED_POLLING_UNIT_KEY);
-            window.dispatchEvent(new CustomEvent("polling-unit-saved", { detail: null }));
-          }}
-          type="button"
-        >
-          Remove
-        </button>
+        {!isJoined && (
+          <button
+            className="ds-button ds-button--ghost"
+            onClick={() => {
+              window.localStorage.removeItem(SAVED_POLLING_UNIT_KEY);
+              window.dispatchEvent(new CustomEvent("polling-unit-saved", { detail: null }));
+            }}
+            type="button"
+          >
+            Remove
+          </button>
+        )}
       </div>
     </section>
   );
@@ -277,13 +299,33 @@ export function SavedPollingUnitCard() {
 export function PollingUnitActions({ unit }: { unit: PollingUnit }) {
   const [isSaved, setIsSaved] = useState(false);
   const [message, setMessage] = useState("");
+  const [joinedId, setJoinedId] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = readSavedPollingUnit();
     setIsSaved(Boolean(saved && saved.id === unit.id));
+
+    if (typeof window !== "undefined") {
+      setJoinedId(window.localStorage.getItem("get-involved:joined-polling-unit-id"));
+    }
   }, [unit.id]);
 
+  useEffect(() => {
+    function handleJoined(event: Event) {
+      const detail = (event as CustomEvent<{ pu_id: string } | null>).detail;
+      setJoinedId(detail?.pu_id ?? null);
+    }
+    window.addEventListener("polling-unit-joined", handleJoined as EventListener);
+    return () => window.removeEventListener("polling-unit-joined", handleJoined as EventListener);
+  }, []);
+
   function toggleSaveUnit() {
+    const joined = window.localStorage.getItem("get-involved:joined-polling-unit-id");
+    if (joined) {
+      setMessage("You cannot change your polling unit after joining.");
+      return;
+    }
+
     if (isSaved) {
       window.localStorage.removeItem(SAVED_POLLING_UNIT_KEY);
       window.dispatchEvent(new CustomEvent("polling-unit-saved", { detail: null }));
@@ -315,15 +357,33 @@ export function PollingUnitActions({ unit }: { unit: PollingUnit }) {
     }
   }
 
+  const isJoinedHere = Boolean(joinedId && joinedId === unit.id);
+  const isJoinedElsewhere = Boolean(joinedId && joinedId !== unit.id);
+
   return (
     <div className="polling-unit-profile__actions">
-      <button className="ds-button ds-button--primary" onClick={toggleSaveUnit} type="button">
-        {isSaved ? "Saved" : "Save this polling unit"}
+      <button
+        className="ds-button ds-button--primary"
+        onClick={toggleSaveUnit}
+        type="button"
+        disabled={isJoinedElsewhere || isJoinedHere}
+      >
+        {isJoinedHere ? "Joined" : isSaved ? "Saved" : "Save this polling unit"}
       </button>
       <button className="ds-button ds-button--ghost" onClick={shareUnit} type="button">
         Share
       </button>
-      {message ? <p className="ds-meta polling-unit-profile__action-note">{message}</p> : null}
+      {isJoinedHere && (
+        <p className="ds-meta polling-unit-profile__action-note">
+          You have joined this polling unit's watch feed.
+        </p>
+      )}
+      {isJoinedElsewhere && (
+        <p className="ds-meta polling-unit-profile__action-note">
+          You cannot save this unit because you have already joined another polling unit's watch.
+        </p>
+      )}
+      {!joinedId && message ? <p className="ds-meta polling-unit-profile__action-note">{message}</p> : null}
     </div>
   );
 }

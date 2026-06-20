@@ -76,6 +76,10 @@ export async function suggestSummaries(
   return composerSuggestions(trimmed);
 }
 
+function generateFriendlyPosterLabel(stateName: string, counter: number): string {
+  return `Voter-${stateName || "State"} ${counter}`;
+}
+
 // ─── Hash helpers (for fingerprint + dedup) ───────────────────────────────
 
 function fingerprintFromRequest(ip: string | null, ua: string | null): string {
@@ -135,8 +139,8 @@ export async function getOrMintPosterLabel(args: {
 
   // Validate PU.
   const puRes = await supabase
-    .from("polling_units_core")
-    .select("id, polling_unit_code")
+    .from("polling_units")
+    .select("id, state")
     .eq("id", args.pu_id)
     .maybeSingle();
   if (puRes.error || !puRes.data) {
@@ -168,9 +172,7 @@ export async function getOrMintPosterLabel(args: {
     .limit(1)
     .maybeSingle();
   const nextCounter = (maxRes.data?.counter ?? 0) + 1;
-  const codeRaw = puRes.data.polling_unit_code ?? args.pu_id.slice(0, 6);
-  const codeClean = codeRaw.replace(/[^a-z0-9]/gi, "").slice(0, 6) || "PU";
-  const candidate = `${codeClean.toUpperCase()}-${String(nextCounter).padStart(3, "0")}`;
+  const candidate = generateFriendlyPosterLabel(puRes.data.state, nextCounter);
 
   const insertRes = await supabase.from("feed_post_sessions").insert({
     polling_unit_id: args.pu_id,
@@ -291,14 +293,13 @@ export async function publishFeedPost(args: {
         .limit(1)
         .maybeSingle();
       const nextCounter = (maxRes.data?.counter ?? 0) + 1;
-      const puCode = await supabase
-        .from("polling_units_core")
-        .select("polling_unit_code")
+      const puRes = await supabase
+        .from("polling_units")
+        .select("state")
         .eq("id", args.pu_id)
         .maybeSingle();
-      const codeRaw = puCode.data?.polling_unit_code ?? args.pu_id.slice(0, 6);
-      const codeClean = codeRaw.replace(/[^a-z0-9]/gi, "").slice(0, 6) || "PU";
-      const candidateLabel = `${codeClean.toUpperCase()}-${String(nextCounter).padStart(3, "0")}`;
+      const stateName = puRes.data?.state || "State";
+      const candidateLabel = generateFriendlyPosterLabel(stateName, nextCounter);
       const insertRes = await supabase.from("feed_post_sessions").insert({
         polling_unit_id: args.pu_id,
         session_token: sessionToken,
@@ -560,5 +561,292 @@ export async function getTopOccurrences(
   } catch (err) {
     console.error("[getTopOccurrences] unexpected", err);
     return [];
+  }
+}
+
+// ─── getFeedPosts ────────────────────────────────────────────────────────
+
+export type ElectionFeedFilters = {
+  state: string;
+  lga: string;
+  ward: string;
+  pollingUnit: string;
+};
+
+export type FeedAnchorInfo = {
+  state: string;
+  stateSlug: string;
+  lga: string;
+  ward: string;
+  pollingUnitCode: string;
+  pollingUnitName: string;
+};
+
+export type FeedMessageInfo = {
+  id: string;
+  poster: string;
+  postedAt: string;
+  anchor: FeedAnchorInfo;
+  text: string;
+  tags: string[];
+};
+
+/**
+ * Read recent feed posts across the election watch network, matching optional filters.
+ * Returns chronological posts sorted descending by posted_at.
+ */
+export async function getFeedPosts(
+  filters: ElectionFeedFilters,
+  limit: number = 40,
+): Promise<FeedMessageInfo[]> {
+  const supabase = getServiceSupabase();
+  if (!supabase) return [];
+
+  const defaultMinLimit = 5;
+  const defaultMaxLimit = 100;
+  const capped = Math.min(Math.max(limit, defaultMinLimit), defaultMaxLimit);
+
+  try {
+    let postsQuery = supabase
+      .from("feed_posts_with_geography")
+      .select("id, polling_unit_id, poster_label, body, summary, posted_at, polling_unit_code, polling_unit_name, state_slug, lga, ward");
+
+    let sessionsQuery = supabase
+      .from("feed_post_sessions_with_geography")
+      .select("id, polling_unit_id, poster_label, counter, joined_at, polling_unit_code, polling_unit_name, state_slug, lga, ward");
+
+    if (filters.state) {
+      postsQuery = postsQuery.eq("state_slug", filters.state);
+      sessionsQuery = sessionsQuery.eq("state_slug", filters.state);
+    }
+    if (filters.lga) {
+      postsQuery = postsQuery.ilike("lga", filters.lga);
+      sessionsQuery = sessionsQuery.ilike("lga", filters.lga);
+    }
+    if (filters.ward) {
+      postsQuery = postsQuery.ilike("ward", filters.ward);
+      sessionsQuery = sessionsQuery.ilike("ward", filters.ward);
+    }
+    if (filters.pollingUnit) {
+      postsQuery = postsQuery.ilike("polling_unit_name", filters.pollingUnit);
+      sessionsQuery = sessionsQuery.ilike("polling_unit_name", filters.pollingUnit);
+    }
+
+    const [postsRes, sessionsRes] = await Promise.all([
+      postsQuery.order("posted_at", { ascending: false }).limit(capped),
+      sessionsQuery.order("joined_at", { ascending: false }).limit(capped),
+    ]);
+
+    if (postsRes.error) {
+      console.error("[getFeedPosts] failed to query feed posts", postsRes.error);
+      return [];
+    }
+
+    const postsData = postsRes.data ?? [];
+    let sessionsData: any[] = [];
+    if (!sessionsRes.error && sessionsRes.data) {
+      sessionsData = sessionsRes.data;
+    } else if (sessionsRes.error) {
+      console.warn("[getFeedPosts] sessions view query failed or does not exist yet", sessionsRes.error);
+    }
+
+    const mapStateName = (slug: string) => {
+      if (!slug) return "";
+      if (slug === "fct") return "FCT";
+      return slug
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    };
+
+    const postsMapped = (postsData as any[]).map((row) => ({
+      id: row.id,
+      poster: row.poster_label,
+      postedAt: row.posted_at,
+      anchor: {
+        state: mapStateName(row.state_slug),
+        stateSlug: row.state_slug,
+        lga: row.lga,
+        ward: row.ward,
+        pollingUnitCode: row.polling_unit_code || row.polling_unit_id,
+        pollingUnitName: row.polling_unit_name,
+      },
+      text: row.body,
+      tags: row.summary ? [row.summary] : [],
+    }));
+
+    const sessionsMapped = (sessionsData as any[]).map((row) => ({
+      id: `join-${row.counter}-${row.joined_at}`,
+      poster: row.poster_label,
+      postedAt: row.joined_at,
+      anchor: {
+        state: mapStateName(row.state_slug),
+        stateSlug: row.state_slug,
+        lga: row.lga,
+        ward: row.ward,
+        pollingUnitCode: row.polling_unit_code || row.polling_unit_id,
+        pollingUnitName: row.polling_unit_name,
+      },
+      text: "joined the polling unit watch",
+      tags: ["joined"],
+    }));
+
+    const merged = [...postsMapped, ...sessionsMapped]
+      .sort((a, b) => new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime())
+      .slice(0, capped);
+
+    return merged;
+  } catch (err) {
+    console.error("[getFeedPosts] unexpected error", err);
+    return [];
+  }
+}
+
+// ─── checkJoinEligibility ──────────────────────────────────────────────────
+
+export type JoinEligibilityResult = {
+  ok: boolean;
+  alreadyJoined: boolean;
+  posterLabel?: string;
+  joinEnabled: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  pollingUnitDetails?: {
+    id: string;
+    pollingUnitCode?: string;
+    pollingUnitName: string;
+    ward: string;
+    lga: string;
+    state: string;
+  };
+  error?: string;
+};
+
+/**
+ * Check if the device is already joined to this PU, if joining is enabled for the state,
+ * and fetch the PU coordinates for the radius verification.
+ */
+export async function checkJoinEligibility(args: {
+  pu_id?: string;
+  session_token: string;
+}): Promise<JoinEligibilityResult> {
+  const supabase = getServiceSupabase();
+  if (!supabase) {
+    return { ok: false, alreadyJoined: false, joinEnabled: false, latitude: null, longitude: null, error: "Server is not configured." };
+  }
+
+  try {
+    let targetPuId = args.pu_id;
+
+    // 1. If pu_id is not provided, check if this session token has joined any polling unit
+    if (!targetPuId && args.session_token && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(args.session_token)) {
+      const { data: session } = await supabase
+        .from("feed_post_sessions")
+        .select("polling_unit_id")
+        .eq("session_token", args.session_token)
+        .maybeSingle();
+
+      if (session?.polling_unit_id) {
+        targetPuId = session.polling_unit_id;
+      }
+    }
+
+    if (!targetPuId) {
+      return { ok: true, alreadyJoined: false, joinEnabled: false, latitude: null, longitude: null };
+    }
+
+    // 2. Check if a session already exists (already joined)
+    if (args.session_token && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(args.session_token)) {
+      const { data: session } = await supabase
+        .from("feed_post_sessions")
+        .select("poster_label")
+        .eq("polling_unit_id", targetPuId)
+        .eq("session_token", args.session_token)
+        .maybeSingle();
+
+      if (session?.poster_label) {
+        const { data: pu } = await supabase
+          .from("polling_units")
+          .select("id, polling_unit_code, polling_unit_name, state_slug, lga, ward")
+          .eq("id", targetPuId)
+          .maybeSingle();
+
+        const mapStateName = (slug: string) => {
+          if (!slug) return "";
+          if (slug === "fct") return "FCT";
+          return slug
+            .split("-")
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(" ");
+        };
+
+        return {
+          ok: true,
+          alreadyJoined: true,
+          posterLabel: session.poster_label,
+          joinEnabled: true,
+          latitude: null,
+          longitude: null,
+          pollingUnitDetails: pu ? {
+            id: pu.id,
+            pollingUnitCode: pu.polling_unit_code,
+            pollingUnitName: pu.polling_unit_name,
+            ward: pu.ward,
+            lga: pu.lga,
+            state: mapStateName(pu.state_slug),
+          } : undefined,
+        };
+      }
+    }
+
+    // 3. Query polling_units view to get state_slug, latitude, and longitude
+    const { data: pu, error: puError } = await supabase
+      .from("polling_units")
+      .select("state_slug, latitude, longitude, id, polling_unit_code, polling_unit_name, lga, ward")
+      .eq("id", targetPuId)
+      .maybeSingle();
+
+    if (puError || !pu) {
+      return { ok: false, alreadyJoined: false, joinEnabled: false, latitude: null, longitude: null, error: "Polling unit not found." };
+    }
+
+    // 4. Query geo_states to get join_enabled flag
+    const { data: state, error: stateError } = await supabase
+      .from("geo_states")
+      .select("join_enabled")
+      .eq("id", pu.state_slug)
+      .maybeSingle();
+
+    if (stateError || !state) {
+      return { ok: false, alreadyJoined: false, joinEnabled: false, latitude: null, longitude: null, error: "State configuration not found." };
+    }
+
+    const mapStateName = (slug: string) => {
+      if (!slug) return "";
+      if (slug === "fct") return "FCT";
+      return slug
+        .split("-")
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(" ");
+    };
+
+    return {
+      ok: true,
+      alreadyJoined: false,
+      joinEnabled: !!state.join_enabled,
+      latitude: pu.latitude,
+      longitude: pu.longitude,
+      pollingUnitDetails: {
+        id: pu.id,
+        pollingUnitCode: pu.polling_unit_code,
+        pollingUnitName: pu.polling_unit_name,
+        ward: pu.ward,
+        lga: pu.lga,
+        state: mapStateName(pu.state_slug),
+      },
+    };
+  } catch (err) {
+    console.error("[checkJoinEligibility] unexpected error:", err);
+    return { ok: false, alreadyJoined: false, joinEnabled: false, latitude: null, longitude: null, error: "Unexpected error checking eligibility." };
   }
 }

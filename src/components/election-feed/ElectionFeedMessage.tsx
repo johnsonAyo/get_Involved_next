@@ -25,12 +25,8 @@ export function ElectionFeedMessage({ msg, isNewest }: Props) {
 
       <p className="election-feed__message-anchor">
         <span className="election-feed__message-anchor-pu">
-          PU&nbsp;{msg.anchor.pollingUnitCode}
+          {msg.anchor.pollingUnitName}
         </span>
-        <span aria-hidden="true" className="election-feed__message-anchor-sep">
-          ·
-        </span>
-        <span>{msg.anchor.pollingUnitName}</span>
         <span aria-hidden="true" className="election-feed__message-anchor-sep">
           ·
         </span>

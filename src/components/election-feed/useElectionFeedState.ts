@@ -19,6 +19,7 @@ import {
   getPollingUnitWards,
   getPollingUnitsForWard,
 } from "@/app/actions/polling-units";
+import { getFeedPosts } from "@/app/actions/feed";
 
 const MAX_VISIBLE_MESSAGES = 40;
 const MIN_CADENCE_MS = 9000;
@@ -36,10 +37,12 @@ export function useElectionFeedState({
   states: GeoState[];
 }) {
   const stateOptions = useMemo<ElectionFeedStateOption[]>(
-    () =>
-      [...states]
+    () => {
+      const sorted = [...states]
         .sort((a, b) => a.name.localeCompare(b.name))
-        .map((s) => ({ value: s.id, label: s.name })),
+        .map((s) => ({ value: s.id, label: s.name }));
+      return [{ value: "", label: "All States" }, ...sorted];
+    },
     [states],
   );
 
@@ -83,34 +86,25 @@ export function useElectionFeedState({
     staleTime: STALE_TIME_MS,
   });
 
-  const [messages, setMessages] = useState<ElectionFeedMessage[]>(
-    () => [...INITIAL_MESSAGES].sort(byPostedAtAsc),
-  );
+  const feedQuery = useQuery({
+    queryKey: ["election-feed-posts", filters],
+    queryFn: () => getFeedPosts(filters, 40),
+    enabled: enabled,
+    refetchInterval: 10000, // Poll every 10 seconds
+    staleTime: 5000,
+  });
 
-  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    if (!enabled) return undefined;
-
-    const queueNext = () => {
-      const delay =
-        MIN_CADENCE_MS +
-        Math.floor(Math.random() * (MAX_CADENCE_MS - MIN_CADENCE_MS));
-      intervalRef.current = setTimeout(() => {
-        setMessages((current) =>
-          pushNextMessage(current, filtersRef.current),
-        );
-        queueNext();
-      }, delay);
+    const handleRefresh = () => {
+      feedQuery.refetch();
     };
-    queueNext();
-
+    window.addEventListener("feed-post-published", handleRefresh);
+    window.addEventListener("polling-unit-joined", handleRefresh);
     return () => {
-      if (intervalRef.current) {
-        clearTimeout(intervalRef.current);
-        intervalRef.current = null;
-      }
+      window.removeEventListener("feed-post-published", handleRefresh);
+      window.removeEventListener("polling-unit-joined", handleRefresh);
     };
-  }, [enabled]);
+  }, [feedQuery]);
 
   const setFilter = useCallback(
     <K extends keyof ElectionFeedFilters>(
@@ -142,29 +136,35 @@ export function useElectionFeedState({
   }, []);
 
   const lgaOptions = useMemo<ElectionFeedLgaOption[]>(
-    () =>
-      (lgasQuery.data ?? []).map((name) => ({
+    () => {
+      const mapped = (lgasQuery.data ?? []).map((name) => ({
         value: name,
         label: name,
-      })),
+      }));
+      return [{ value: "", label: "All LGAs" }, ...mapped];
+    },
     [lgasQuery.data],
   );
 
   const wardOptions = useMemo<ElectionFeedWardOption[]>(
-    () =>
-      (wardsQuery.data ?? []).map((name) => ({
+    () => {
+      const mapped = (wardsQuery.data ?? []).map((name) => ({
         value: name,
         label: name,
-      })),
+      }));
+      return [{ value: "", label: "All Wards" }, ...mapped];
+    },
     [wardsQuery.data],
   );
 
   const pollingUnitOptions = useMemo<ElectionFeedPollingUnitOption[]>(
-    () =>
-      (pusQuery.data ?? []).map((pu: GeoPollingUnit) => ({
+    () => {
+      const mapped = (pusQuery.data ?? []).map((pu: GeoPollingUnit) => ({
         value: pu.name,
         label: pu.code ? `${pu.name} (${pu.code})` : pu.name,
-      })),
+      }));
+      return [{ value: "", label: "All Polling Units" }, ...mapped];
+    },
     [pusQuery.data],
   );
 
@@ -190,13 +190,19 @@ export function useElectionFeedState({
     return filters;
   }, [filters, stateOptions, lgaOptions, wardOptions, pollingUnitOptions]);
 
-  const visibleMessages = useMemo(
-    () => filterMessages(messages, normalisedFilters).sort(byPostedAtAsc),
-    [messages, normalisedFilters],
-  );
+  const visibleMessages = useMemo<ElectionFeedMessage[]>(() => {
+    const dbPosts = feedQuery.data ?? [];
+    if (dbPosts.length > 0) {
+      return [...dbPosts].sort(byPostedAtAsc);
+    }
+    if (process.env.NODE_ENV !== "production") {
+      return filterMessages(INITIAL_MESSAGES, normalisedFilters).sort(byPostedAtAsc);
+    }
+    return [];
+  }, [feedQuery.data, normalisedFilters]);
 
   return {
-    messages,
+    messages: visibleMessages,
     visibleMessages,
     filters: normalisedFilters,
     filterOptions: {

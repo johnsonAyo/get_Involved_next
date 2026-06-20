@@ -1,33 +1,3 @@
--- ═══════════════════════════════════════════════════════════════════════════
--- Get Involved — Supabase Schema (Normalized)
--- Apply idempotently: safe to re-run after partial migrations.
--- ═══════════════════════════════════════════════════════════════════════════
-
--- ─── Geography topology vs facts ─────────────────────────────────────────────
--- This schema exposes two distinct shapes for the State → LGA → Ward chain:
---
---   • Topology tables  (geo_states, geo_lgas, geo_wards)
---       hold the SHAPE of the geography. They are short reference tables that
---       answer "what belongs to what" but not "what is."
---
---   • Fact table       (polling_units_core)
---       holds the RECORDS that hang off the topology. Each row is one polling
---       unit with a single FK anchor (ward_id → geo_wards.id). There is NO
---       `geo_polling_units` tier — polling-unit records live ONLY here.
---
--- Adds to:
---   • For application READS, prefer the `polling_units` *view* — it joins
---     polling_units_core to geo_wards/geo_lgas/geo_states so a single
---     SELECT can filter by `state_slug`, `lga`, and `ward`. The canonical
---     pattern is in `src/lib/content-store.server.ts:getPollingUnits`.
---   • For derived cascading DROPDOWNS (state → lga → ward), query the
---     geo_* tables directly. The pattern is in
---     `src/app/actions/polling-units.ts:getGeoStates /
---     getPollingUnitLgas / getPollingUnitWards`.
---
--- If you are adding a new server action that joins these tables, READ
--- those two files first. Do not invent a `geo_polling_units` table or a
--- nested-join shape that does not match what the schema actually exposes.
 
 create extension if not exists pgcrypto;
 
@@ -59,14 +29,6 @@ alter table public.parties
 
 create index if not exists parties_name_idx on public.parties (name);
 
--- NOTE: Positions (President, Governor, Senator, etc.) are constitutionally
--- defined and do not change. They are stored as static data in:
---   src/data/positions.js
--- The candidate.position column stores the stable id (e.g. "governor").
-
--- ─── Profile ──────────────────────────────────────────────────────────────────
--- A Profile is a real person. One person can have many candidacies over time.
--- All personal details live here; nothing person-specific goes in candidates.
 
 create table if not exists public.profile (
   id                  uuid        primary key default gen_random_uuid(),
@@ -142,11 +104,6 @@ create unique index if not exists profile_slug_idx     on public.profile (slug);
 create index if not exists profile_full_name_idx        on public.profile (full_name);
 create index if not exists profile_current_party_idx    on public.profile (current_party_id);
 create index if not exists profile_latest_year_idx      on public.profile (latest_election_year desc);
-
--- ─── Candidate ────────────────────────────────────────────────────────────────
--- A Candidate row = one electoral run (one person × one election × one race).
--- Personal details (name, bio, photo, etc.) belong in profile — JOIN to get them.
--- Party display text (abbreviation, full name, logo) belongs in parties — JOIN.
 
 create table if not exists public.candidates (
   id                   uuid        primary key default gen_random_uuid(),
@@ -277,10 +234,14 @@ create table if not exists public.election_facts (
 -- all dropdown/select menus across the app.
 
 create table if not exists public.geo_states (
-  id    text        primary key,         -- slug, e.g. "lagos" (matches state_slug)
-  name  text        not null,            -- display name, e.g. "Lagos"
-  code  text                             -- state_code if available
+  id           text        primary key,         -- slug, e.g. "lagos" (matches state_slug)
+  name         text        not null,            -- display name, e.g. "Lagos"
+  code         text,                            -- state_code if available
+  join_enabled boolean     not null default false
 );
+
+alter table public.geo_states
+  add column if not exists join_enabled boolean not null default false;
 
 create table if not exists public.geo_lgas (
   id        uuid        primary key default gen_random_uuid(),
@@ -436,7 +397,7 @@ create policy "Allow public insert on candidate_applications" on public.candidat
 -- `PU005-014`. Stable across a session's lifetime in that PU.
 create table if not exists public.feed_post_sessions (
   id              uuid        primary key default gen_random_uuid(),
-  polling_unit_id uuid        not null references public.polling_units_core(id) on delete cascade,
+  polling_unit_id text        not null references public.polling_units_core(id) on delete cascade,
   session_token   uuid        not null,
   poster_label    text        not null,                 -- 'PU005-014'
   counter         integer     not null check (counter > 0),
@@ -452,7 +413,7 @@ create unique index if not exists feed_post_sessions_pu_counter_idx
 -- "common occurrence" surface at /polling-units/[id].
 create table if not exists public.feed_posts (
   id                uuid        primary key default gen_random_uuid(),
-  polling_unit_id   uuid        not null references public.polling_units_core(id) on delete cascade,
+  polling_unit_id   text        not null references public.polling_units_core(id) on delete cascade,
   poster_label      text        not null,
   body              text        not null check (char_length(body) between 4 and 30),
   summary           text        not null check (char_length(summary) between 4 and 60),
@@ -488,6 +449,41 @@ left join public.feed_post_sessions s
        on s.polling_unit_id = p.polling_unit_id
       and s.session_token   = p.session_token;
 
+-- View to resolve full geographic details for feed widgets
+create or replace view public.feed_posts_with_geography
+with (security_invoker = true) as
+select
+  p.id,
+  p.polling_unit_id,
+  p.poster_label,
+  p.body,
+  p.summary,
+  p.created_at as posted_at,
+  pu.polling_unit_code,
+  pu.polling_unit_name,
+  pu.state_slug,
+  pu.lga,
+  pu.ward
+from public.feed_posts p
+join public.polling_units pu on pu.id = p.polling_unit_id;
+
+-- View to resolve full geographic details for feed post sessions (joins)
+create or replace view public.feed_post_sessions_with_geography
+with (security_invoker = true) as
+select
+  s.id,
+  s.polling_unit_id,
+  s.poster_label,
+  s.counter,
+  s.created_at as joined_at,
+  pu.polling_unit_code,
+  pu.polling_unit_name,
+  pu.state_slug,
+  pu.lga,
+  pu.ward
+from public.feed_post_sessions s
+join public.polling_units pu on pu.id = s.polling_unit_id;
+
 alter table public.feed_post_sessions enable row level security;
 alter table public.feed_posts            enable row level security;
 
@@ -499,6 +495,86 @@ create policy "Allow public select on feed_post_sessions"
   on public.feed_post_sessions for select using (true);
 create policy "Allow public select on feed_posts"
   on public.feed_posts for select using (true);
+
+-- Atomic poster handle and session token minting helper
+create or replace function public.mint_feed_post_session(
+  p_polling_unit_id text,
+  p_session_token uuid
+)
+returns json
+language plpgsql
+security definer
+as $$
+declare
+  v_existing record;
+  v_next_counter integer;
+  v_state_name text;
+  v_candidate_label text;
+  v_result record;
+begin
+  -- Read existing
+  select polling_unit_id, session_token, poster_label, counter
+  into v_existing
+  from public.feed_post_sessions
+  where polling_unit_id = p_polling_unit_id
+    and session_token = p_session_token;
+
+  if found then
+    return json_build_object(
+      'poster_label', v_existing.poster_label,
+      'counter', v_existing.counter
+    );
+  end if;
+
+  -- Validate and get State name
+  select state into v_state_name
+  from public.polling_units
+  where id = p_polling_unit_id;
+
+  if not found then
+    raise exception 'Polling unit not found';
+  end if;
+
+  -- Mint counter and label
+  select coalesce(max(counter), 0) + 1 into v_next_counter
+  from public.feed_post_sessions
+  where polling_unit_id = p_polling_unit_id;
+
+  v_candidate_label := 'Voter-' || v_state_name || ' ' || v_next_counter;
+
+  -- Insert session
+  insert into public.feed_post_sessions (
+    polling_unit_id,
+    session_token,
+    poster_label,
+    counter
+  ) values (
+    p_polling_unit_id,
+    p_session_token,
+    v_candidate_label,
+    v_next_counter
+  )
+  returning poster_label, counter into v_result;
+
+  return json_build_object(
+    'poster_label', v_result.poster_label,
+    'counter', v_result.counter
+  );
+exception
+  when unique_violation then
+    -- Handle concurrent inserts
+    select poster_label, counter
+    into v_result
+    from public.feed_post_sessions
+    where polling_unit_id = p_polling_unit_id
+      and session_token = p_session_token;
+      
+    return json_build_object(
+      'poster_label', v_result.poster_label,
+      'counter', v_result.counter
+    );
+end;
+$$;
 
 -- Writes go through service-role server actions only. NO public insert
 -- policies. The user has no auth; the server action is the gatekeeper

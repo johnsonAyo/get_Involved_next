@@ -34,6 +34,7 @@ type ReadProps = {
 type ComposeProps = {
   mode: "compose";
   onClose: () => void;
+  onPosted?: () => void;
 };
 
 type Props = ReadProps | ComposeProps;
@@ -150,7 +151,7 @@ export function ElectionFeedPanel(props: Props) {
         />
       ) : (
         <div className="election-feed__compose-body">
-          <PostComposer onPosted={onClose} />
+          <PostComposer onPosted={props.mode === "compose" ? props.onPosted : undefined} />
         </div>
       )}
     </section>

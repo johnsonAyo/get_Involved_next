@@ -78,7 +78,7 @@ export function ElectionFeedWidget({ states }: Props) {
             resetFilters={feed.resetFilters}
           />
         ) : (
-          <ElectionFeedPanel mode="compose" onClose={close} />
+          <ElectionFeedPanel mode="compose" onClose={close} onPosted={() => setMode("read")} />
         )
       ) : (
         <>

@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  checkJoinEligibility,
   getOrMintPosterLabel,
   publishFeedPost,
   suggestSummaries,
@@ -13,6 +14,38 @@ import type { MatchedSummary } from "@/lib/summary-matcher";
 const SAVED_POLLING_UNIT_KEY = "get-involved:saved-polling-unit";
 const FEED_SESSION_KEY = "get-involved:feed-session";
 const PANEL_OPEN_STORAGE_KEY = "get-involved:election-feed-open";
+
+const MIN_SEARCH_LENGTH = 4;
+const MIN_SUGGESTIONS_LIMIT = 3;
+
+const BASE_SUGGESTIONS: MatchedSummary[] = [
+  {
+    id: "accreditation-ongoing",
+    summary: "accreditation is ongoing",
+    matchedKeyword: "",
+  },
+  {
+    id: "voting-started",
+    summary: "voting has started",
+    matchedKeyword: "",
+  },
+  {
+    id: "bvas-failed",
+    summary: "BVAS authentication issue",
+    matchedKeyword: "",
+  },
+];
+
+function getAutomaticTag(id: string): string {
+  const parts = id.split("-");
+  if (id.startsWith("card-reader")) return "#card-reader";
+  if (id.startsWith("ballot-supply")) return "#ballot-papers";
+  if (id.startsWith("started-late")) return "#started-late";
+  if (id.startsWith("started-on-time")) return "#started-on-time";
+  if (id.startsWith("assisted-voting")) return "#assisted-voting";
+  return `#${parts[0]}`;
+}
+
 
 type SavedPollingUnit = {
   id: string;
@@ -48,7 +81,31 @@ function readOrMintSessionToken(): string {
   }
 }
 
-const UUID_PROBE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const EARTH_RADIUS_METERS = 6371000;
+const MAX_JOIN_RADIUS_METERS = 1000;
+const LOCATION_CHECK_TIMEOUT_MS = 10000;
+
+function calculateDistanceMeters(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+): number {
+  const phi1 = (lat1 * Math.PI) / 180;
+  const phi2 = (lat2 * Math.PI) / 180;
+  const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+    Math.cos(phi1) *
+    Math.cos(phi2) *
+    Math.sin(deltaLambda / 2) *
+    Math.sin(deltaLambda / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+  return EARTH_RADIUS_METERS * c;
+}
 
 type ComposerState =
   | { kind: "idle" }
@@ -74,7 +131,7 @@ export function PostComposer({ onPosted }: Props) {
     router.push("/polling-units");
   }
 
-  const [savedUnit, setSavedUnit] = useState<SavedPollingUnit | null>(null);
+  const [savedUnit, setSavedUnit] = useState<SavedPollingUnit | null>(() => readSavedPollingUnit());
   const [body, setBody] = useState("");
   const [candidates, setCandidates] = useState<MatchedSummary[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -84,8 +141,29 @@ export function PostComposer({ onPosted }: Props) {
   const sessionTokenRef = useRef<string>("");
   const onPostedTimerRef = useRef<number | null>(null);
 
+  // Gated join flow state variables
+  const [eligibilityLoading, setEligibilityLoading] = useState(true);
+  const [alreadyJoined, setAlreadyJoined] = useState(false);
+  const [joinEnabled, setJoinEnabled] = useState(false);
+  const [puCoords, setPuCoords] = useState<{ latitude: number | null; longitude: number | null }>({
+    latitude: null,
+    longitude: null,
+  });
+  const [isVerifyingLocation, setIsVerifyingLocation] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
   useEffect(() => {
+    function handleSaved(event: Event) {
+      const detail = (event as CustomEvent<SavedPollingUnit | null>).detail;
+      const joined = window.localStorage.getItem("get-involved:joined-polling-unit-id");
+      if (joined && (!detail || detail.id !== joined)) {
+        return;
+      }
+      setSavedUnit(detail ?? null);
+    }
+    window.addEventListener("polling-unit-saved", handleSaved as EventListener);
     return () => {
+      window.removeEventListener("polling-unit-saved", handleSaved as EventListener);
       if (onPostedTimerRef.current !== null) {
         window.clearTimeout(onPostedTimerRef.current);
         onPostedTimerRef.current = null;
@@ -94,37 +172,60 @@ export function PostComposer({ onPosted }: Props) {
   }, []);
 
   useEffect(() => {
-    setSavedUnit(readSavedPollingUnit());
-
-    function handleSaved(event: Event) {
-      setSavedUnit(
-        (event as CustomEvent<SavedPollingUnit | null>).detail ?? null,
-      );
+    if (!sessionTokenRef.current) {
+      sessionTokenRef.current = readOrMintSessionToken();
     }
-    window.addEventListener("polling-unit-saved", handleSaved as EventListener);
-    return () => window.removeEventListener("polling-unit-saved", handleSaved as EventListener);
-  }, []);
 
-  useEffect(() => {
-    sessionTokenRef.current = readOrMintSessionToken();
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
     if (!savedUnit) {
       setPosterLabel(null);
-      return;
-    }
-    if (!sessionTokenRef.current || !UUID_PROBE.test(sessionTokenRef.current)) {
+      setAlreadyJoined(false);
+      setEligibilityLoading(false);
       return;
     }
 
-    void getOrMintPosterLabel({
+    let cancelled = false;
+    setEligibilityLoading(true);
+    setLocationError(null);
+
+    void checkJoinEligibility({
       pu_id: savedUnit.id,
       session_token: sessionTokenRef.current,
     }).then((res) => {
       if (cancelled) return;
-      if (res.ok) setPosterLabel(res.poster_label);
+      setEligibilityLoading(false);
+      if (res.ok) {
+        setAlreadyJoined(res.alreadyJoined);
+        setJoinEnabled(res.joinEnabled);
+        setPuCoords({ latitude: res.latitude, longitude: res.longitude });
+
+        if (res.alreadyJoined && res.posterLabel) {
+          setPosterLabel(res.posterLabel);
+
+          const activePuId = res.pollingUnitDetails?.id || savedUnit.id;
+          if (activePuId) {
+            window.localStorage.setItem("get-involved:joined-polling-unit-id", activePuId);
+          }
+
+          if (res.pollingUnitDetails && res.pollingUnitDetails.id !== savedUnit.id) {
+            const restoredUnit: SavedPollingUnit = {
+              id: res.pollingUnitDetails.id,
+              pollingUnitCode: res.pollingUnitDetails.pollingUnitCode,
+              pollingUnitName: res.pollingUnitDetails.pollingUnitName,
+              ward: res.pollingUnitDetails.ward,
+              lga: res.pollingUnitDetails.lga,
+              state: res.pollingUnitDetails.state,
+              savedAt: new Date().toISOString(),
+            };
+            setSavedUnit(restoredUnit);
+            window.localStorage.setItem(SAVED_POLLING_UNIT_KEY, JSON.stringify(restoredUnit));
+            window.dispatchEvent(new CustomEvent("polling-unit-saved", { detail: restoredUnit }));
+          }
+        } else {
+          setPosterLabel(null);
+        }
+      } else {
+        setLocationError(res.error ?? "Failed to check joining eligibility.");
+      }
     });
 
     return () => {
@@ -132,20 +233,146 @@ export function PostComposer({ onPosted }: Props) {
     };
   }, [savedUnit]);
 
+  async function handleJoin() {
+    if (!savedUnit || !sessionTokenRef.current) return;
+
+    const confirmationMessage = "Are you sure you want to join this polling unit? Once you join, you will not be able to save or join a new polling unit on this device for this election.";
+    if (!window.confirm(confirmationMessage)) {
+      return;
+    }
+
+    setIsVerifyingLocation(true);
+    setLocationError(null);
+
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser.");
+      setIsVerifyingLocation(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: userLat, longitude: userLon } = position.coords;
+        const { latitude: puLat, longitude: puLon } = puCoords;
+
+        if (puLat === null || puLon === null) {
+          setLocationError("Polling unit coordinates are missing. Location verification cannot be completed.");
+          setIsVerifyingLocation(false);
+          return;
+        }
+
+        const distance = calculateDistanceMeters(userLat, userLon, puLat, puLon);
+
+        const isDevelopment = process.env.NODE_ENV !== "production" || (typeof window !== "undefined" && window.location.hostname === "localhost");
+        if (distance > MAX_JOIN_RADIUS_METERS && !isDevelopment) {
+          const distanceKm = (distance / 1000).toFixed(2);
+          setLocationError(
+            `You are ${distanceKm} km away. You must be physically at the location (within 1 km) to join.`
+          );
+          setIsVerifyingLocation(false);
+          return;
+        }
+
+        try {
+          const res = await getOrMintPosterLabel({
+            pu_id: savedUnit.id,
+            session_token: sessionTokenRef.current,
+          });
+
+          if (res.ok) {
+            setPosterLabel(res.poster_label);
+            setAlreadyJoined(true);
+            window.localStorage.setItem("get-involved:joined-polling-unit-id", savedUnit.id);
+            window.dispatchEvent(
+              new CustomEvent("polling-unit-joined", { detail: { pu_id: savedUnit.id } })
+            );
+          } else {
+            setLocationError(res.error ?? "Failed to join polling unit.");
+          }
+        } catch (err) {
+          setLocationError("Could not complete join process. Please try again.");
+        } finally {
+          setIsVerifyingLocation(false);
+        }
+      },
+      (error) => {
+        setIsVerifyingLocation(false);
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            setLocationError(
+              "Location permission denied. Please enable location access in your browser settings to verify you are at the polling unit."
+            );
+            break;
+          case error.POSITION_UNAVAILABLE:
+            setLocationError("Position unavailable. Please check your GPS connection and try again.");
+            break;
+          case error.TIMEOUT:
+            setLocationError("Location check timed out. Please check your GPS and try again.");
+            break;
+          default:
+            setLocationError("Could not retrieve your location. Please check your settings and try again.");
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: LOCATION_CHECK_TIMEOUT_MS,
+        maximumAge: 0,
+      }
+    );
+  }
+
   useEffect(() => {
-    const trimmed = body.trim();
-    if (trimmed.length < 4 || !savedUnit) {
+    if (!savedUnit) {
       setCandidates([]);
       setSelectedId(null);
       return;
     }
+
+    const trimmed = body.trim();
+    if (selectedId) {
+      const selected = candidates.find((c) => c.id === selectedId);
+      if (selected && selected.summary === trimmed) {
+        return;
+      }
+    }
+    if (trimmed.length < MIN_SEARCH_LENGTH) {
+      if (trimmed.length === 0) {
+        setCandidates(BASE_SUGGESTIONS);
+      } else {
+        const lower = trimmed.toLowerCase();
+        const filtered = BASE_SUGGESTIONS.filter((s) =>
+          s.summary.toLowerCase().includes(lower)
+        );
+        setCandidates(filtered.length > 0 ? filtered : BASE_SUGGESTIONS);
+      }
+      setSelectedId((current) => {
+        if (current && BASE_SUGGESTIONS.some((s) => s.id === current)) return current;
+        return null;
+      });
+      return;
+    }
+
     setIsFetching(true);
     const timer = window.setTimeout(async () => {
       try {
         const suggestions = await suggestSummaries(trimmed);
-        setCandidates(suggestions);
+        const lower = trimmed.toLowerCase();
+        const matchingBase = BASE_SUGGESTIONS.filter((s) =>
+          s.summary.toLowerCase().includes(lower)
+        );
+
+        const combined = [...suggestions];
+        for (const base of matchingBase) {
+          if (!combined.some((s) => s.id === base.id)) {
+            combined.push(base);
+          }
+        }
+
+        const finalSuggestions = combined.length > 0 ? combined : BASE_SUGGESTIONS;
+
+        setCandidates(finalSuggestions);
         setSelectedId((current) => {
-          if (current && suggestions.some((s) => s.id === current)) return current;
+          if (current && finalSuggestions.some((s) => s.id === current)) return current;
           return null;
         });
       } finally {
@@ -157,10 +384,10 @@ export function PostComposer({ onPosted }: Props) {
 
   const canSubmit = Boolean(
     savedUnit &&
-      body.trim().length >= 4 &&
-      body.trim().length <= 30 &&
-      selectedId &&
-      state.kind !== "submitting",
+    body.trim().length >= 4 &&
+    body.trim().length <= 30 &&
+    selectedId &&
+    state.kind !== "submitting",
   );
 
   async function handleSubmit() {
@@ -170,10 +397,11 @@ export function PostComposer({ onPosted }: Props) {
 
     setState({ kind: "submitting" });
     try {
+      const tag = getAutomaticTag(picked.id);
       const result = await publishFeedPost({
         pu_id: savedUnit.id,
-        body: body.trim(),
-        summary: picked.summary,
+        body: picked.summary,
+        summary: tag,
         session_token: sessionTokenRef.current,
       });
       if (result.ok) {
@@ -226,6 +454,62 @@ export function PostComposer({ onPosted }: Props) {
     );
   }
 
+  if (eligibilityLoading) {
+    return (
+      <div className="post-composer post-composer--gated" role="status">
+        <p className="ds-eyebrow ds-eyebrow--accent">Checking eligibility</p>
+        <p className="post-composer__gate-copy">
+          Verifying your access to this polling unit's feed...
+        </p>
+      </div>
+    );
+  }
+
+  if (!alreadyJoined) {
+    if (!joinEnabled) {
+      return (
+        <div className="post-composer post-composer--gated" role="status">
+          <header className="post-composer__head">
+            <p className="ds-eyebrow ds-eyebrow--accent">Posting live updates is currently closed</p>
+            <p className="post-composer__anchor">
+              {savedUnit.pollingUnitName} · {savedUnit.ward}, {savedUnit.lga}, {savedUnit.state}
+            </p>
+          </header>
+          <p className="post-composer__gate-copy">
+            Posting live updates is currently closed. It will be open on Election Day.
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="post-composer post-composer--gated" role="status">
+        <header className="post-composer__head">
+          <p className="ds-eyebrow ds-eyebrow--accent">Join Polling Unit</p>
+          <p className="post-composer__anchor">
+            {savedUnit.pollingUnitName} · {savedUnit.ward}, {savedUnit.lga}, {savedUnit.state}
+          </p>
+        </header>
+        <p className="post-composer__gate-copy">
+          To report observations from this polling unit, you must verify your device is physically at the location (within 1 km).
+        </p>
+        <button
+          type="button"
+          className="ds-button ds-button--primary"
+          onClick={handleJoin}
+          disabled={isVerifyingLocation}
+        >
+          {isVerifyingLocation ? "Verifying Location..." : "Verify Location & Join"}
+        </button>
+        {locationError && (
+          <p className="post-composer__status post-composer__status--error" role="alert">
+            {locationError}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <form
       className="post-composer"
@@ -266,9 +550,7 @@ export function PostComposer({ onPosted }: Props) {
         <div className="post-composer__suggestions" aria-busy={isFetching ? "true" : "false"}>
           {candidates.length === 0 ? (
             <p className="post-composer__empty">
-              {isFetching
-                ? "Matching…"
-                : "Type at least 4 characters to see suggested summaries."}
+              {isFetching ? "Matching…" : ""}
             </p>
           ) : (
             <ul className="post-composer__chips" role="radiogroup">
@@ -278,10 +560,17 @@ export function PostComposer({ onPosted }: Props) {
                   <li key={c.id}>
                     <button
                       aria-checked={isSelected}
-                      className={`post-composer__chip${isSelected ? " is-selected" : ""}${
-                        c.id.startsWith("novel-") ? " is-novel" : ""
-                      }`}
-                      onClick={() => setSelectedId(isSelected ? null : c.id)}
+                      className={`post-composer__chip${isSelected ? " is-selected" : ""}${c.id.startsWith("novel-") ? " is-novel" : ""
+                        }`}
+                      onClick={() => {
+                        if (isSelected) {
+                          setSelectedId(null);
+                          setBody("");
+                        } else {
+                          setSelectedId(c.id);
+                          setBody(c.summary);
+                        }
+                      }}
                       role="radio"
                       type="button"
                     >

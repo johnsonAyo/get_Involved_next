@@ -659,6 +659,14 @@ html[data-theme="dark"] .election-feed__filter-reset:focus-visible {
     background var(--ds-motion-fast) var(--ds-ease-standard);
 }
 
+.post-composer__input::placeholder {
+  font-family: var(--ds-font-mono);
+  font-size: 0.78rem;
+  color: var(--ds-color-ink-muted);
+  letter-spacing: 0.04em;
+  opacity: 1;
+}
+
 .post-composer__input:focus {
   outline: none;
   border-color: var(--ds-color-accent);
