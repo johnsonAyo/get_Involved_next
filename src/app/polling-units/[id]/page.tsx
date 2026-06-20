@@ -7,6 +7,7 @@ import { NigeriaStatesMap } from "@/components/NigeriaStatesMap";
 import { getPollingUnitById } from "@/lib/content-store.server";
 import type { PollingUnit } from "@/types/domain";
 import { PollingUnitActions } from "../PollingUnitWatchClient";
+import { FeedForPU } from "@/components/election-feed/FeedForPU";
 
 function locationConfidenceLabel(unit: PollingUnit): string {
   switch (unit.coordinateQuality) {
@@ -174,14 +175,7 @@ export default async function Page({
                   <div className="candidate-profile__section-heading">
                     <h2>Election-day updates</h2>
                   </div>
-                  <div className="candidate-profile__empty">
-                    <p>
-                      Live citizen updates for this polling unit will open during the 2027 General Election.
-                    </p>
-                    <p>
-                      When posting opens, updates from this page will be timestamped and tied to this official polling unit record.
-                    </p>
-                  </div>
+                  <FeedForPU unit={unit} />
                 </section>
 
                 <section className="candidate-profile__section">

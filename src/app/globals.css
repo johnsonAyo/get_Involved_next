@@ -1,6 +1,14 @@
 @import "../styles/tokens.css";
 @import "../styles/design-system.css";
 @import "../styles/page.css";
+/* election-feed.css is intentionally NOT @imported here. It is
+ * imported directly from src/app/layout.tsx because the JS-import
+ * path proved more reliable than trailing CSS @imports in this
+ * codebase — a build with a stale .next/ cache would silently drop
+ * the rules. If you add new component-specific stylesheets, do the
+ * same: import them from layout.tsx. And if a CSS edit ever doesn't
+ * show up in the served bundle, run `rm -rf .next && npx next build`
+ * to clear the cache before debugging further. */
 
 html,
 body {

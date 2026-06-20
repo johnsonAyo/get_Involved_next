@@ -117,3 +117,62 @@ export async function getPollingUnitWards(
     return [];
   }
 }
+
+export type GeoPollingUnit = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+/**
+ * Fetch polling units for a given state + LGA + ward.
+ *
+ * Reads from the `polling_units` *view* (defined in
+ * supabase/schema.sql), which flattens `polling_units_core` together
+ * with the geo_wards → geo_lgas → geo_states chain so a single query
+ * can filter by `state_slug`, `lga`, and `ward` in one shot — same
+ * pattern used by `getPollingUnits` in `src/lib/content-store.server.ts`.
+ *
+ * This is the deepest tier of the cascading filter. There is no
+ * local fallback (nigeria.js ships state→LGA only, no ward/PU data).
+ * If Supabase isn't configured or no rows match for this ward, the
+ * action returns an empty array and the tier renders an empty
+ * dropdown rather than spinning forever.
+ */
+export async function getPollingUnitsForWard(
+  stateSlug: string,
+  lga: string,
+  ward: string,
+): Promise<GeoPollingUnit[]> {
+  if (!stateSlug || !lga || !ward) return [];
+
+  const supabase = createServerSupabase();
+  if (!supabase) return [];
+
+  try {
+    const { data, error } = await supabase
+      .from("polling_units")
+      .select("id, polling_unit_code, polling_unit_name")
+      .eq("state_slug", stateSlug.trim().toLowerCase())
+      .ilike("lga", lga.trim())
+      .ilike("ward", ward.trim())
+      .order("polling_unit_name", { ascending: true })
+      .limit(500);
+
+    if (error || !Array.isArray(data)) {
+      console.error("Failed to fetch Polling Units for ward:", ward, error);
+      return [];
+    }
+
+    return data
+      .map((row) => ({
+        id: row.id,
+        code: row.polling_unit_code ?? "",
+        name: formatPollingUnitText(row.polling_unit_name),
+      }))
+      .filter((row) => Boolean(row.name));
+  } catch (err) {
+    console.error("Error in getPollingUnitsForWard:", err);
+    return [];
+  }
+}

@@ -15,6 +15,17 @@ type Props = {
   options: DropdownOption[];
   placeholder: string;
   required?: boolean;
+  /**
+   * When true (default), the open dropdown options list contains a
+   * leading item that selects an empty value with the placeholder
+   * text — the project's long-standing "Clear" affordance.
+   *
+   * The Election Watch slice sets this to false because (a) it offers
+   * its own explicit "Clear filters" button when any filter is set
+   * and (b) the placeholder-as-bullet reads confusingly alongside a
+   * "Select state" prompt.
+   */
+  showReset?: boolean;
   value: string;
   variant?: "compact" | "field" | "filter";
 };
@@ -29,6 +40,7 @@ export function DropdownSelect({
   options,
   placeholder,
   required = false,
+  showReset = true,
   value,
   variant = "filter",
 }: Props) {
@@ -137,17 +149,19 @@ export function DropdownSelect({
             className="dropdown-select__options-list"
             role="listbox"
           >
-            <li>
-              <button
-                aria-selected={!value}
-                className="dropdown-select__option"
-                onClick={() => selectOption("")}
-                role="option"
-                type="button"
-              >
-                {placeholder}
-              </button>
-            </li>
+            {showReset ? (
+              <li>
+                <button
+                  aria-selected={!value}
+                  className="dropdown-select__option"
+                  onClick={() => selectOption("")}
+                  role="option"
+                  type="button"
+                >
+                  {placeholder}
+                </button>
+              </li>
+            ) : null}
             {filteredOptions.length > 0 ? (
               filteredOptions.map((option) => (
                 <li key={option.value}>
