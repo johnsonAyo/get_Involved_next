@@ -308,15 +308,6 @@
   scroll-behavior: smooth;
   scrollbar-width: thin;
   scrollbar-color: rgba(5, 5, 5, 0.18) transparent;
-  background:
-    repeating-linear-gradient(
-      180deg,
-      transparent 0,
-      transparent calc(100% / 8 * 1),
-      rgba(0, 135, 83, 0.025) calc(100% / 8 * 1),
-      rgba(0, 135, 83, 0.025) calc(100% / 8 * 2)
-    );
-  
   overflow-anchor: none;
 }
 
@@ -380,8 +371,9 @@
 
 .election-feed__message-head {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
 }
 
 .election-feed__message-time {
@@ -498,7 +490,6 @@
 
 @media (max-width: 38.75rem) {
   .election-feed__panel {
-    
     width: 100vw;
     height: calc(100vh - 5rem);
     height: calc(100dvh - 5rem);
@@ -508,7 +499,39 @@
   }
 
   .election-feed__panel-header {
-    padding-top: var(--ds-space-5);
+    padding: var(--ds-space-2) var(--ds-space-4) var(--ds-space-2) !important;
+  }
+
+  .election-feed__panel-eyebrow {
+    margin-bottom: 0.1rem !important;
+  }
+
+  .election-feed__panel-title {
+    font-size: 1.05rem !important;
+  }
+
+  .election-feed__filters {
+    padding: 0.4rem var(--ds-space-4) !important;
+    gap: var(--ds-space-2) !important;
+  }
+
+  .election-feed__filter-row {
+    gap: var(--ds-space-1) !important;
+  }
+
+  .election-feed__filter-cell .dropdown-select__trigger,
+  .election-feed__filter-cell .dropdown-select__trigger--open {
+    height: 2.25rem !important;
+    padding: 0 var(--ds-space-2) !important;
+    font-size: 0.82rem !important;
+  }
+
+  .election-feed__filter-cell .dropdown-select__trigger-input {
+    font-size: 0.82rem !important;
+  }
+
+  .election-feed__panel-footer {
+    padding: var(--ds-space-2) var(--ds-space-4) !important;
   }
 }
 
@@ -534,16 +557,7 @@ html[data-theme="dark"] .election-feed__panel-footer {
   background: var(--ds-color-night-soft);
 }
 
-html[data-theme="dark"] .election-feed__list {
-  background:
-    repeating-linear-gradient(
-      180deg,
-      transparent 0,
-      transparent calc(100% / 8 * 1),
-      rgba(33, 185, 113, 0.04) calc(100% / 8 * 1),
-      rgba(33, 185, 113, 0.04) calc(100% / 8 * 2)
-    );
-}
+/* Repeating gradient pattern removed */
 
 html[data-theme="dark"] .election-feed__message {
   border-bottom-color: var(--ds-color-ink-a10);

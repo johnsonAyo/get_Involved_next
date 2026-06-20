@@ -15,10 +15,10 @@ export function ElectionFeedMessage({ msg, isNewest }: Props) {
       data-newest={isNewest ? "true" : "false"}
     >
       <header className="election-feed__message-head">
+        <span className="election-feed__message-poster">{msg.poster}</span>
         <span className="election-feed__message-time">
           <time dateTime={msg.postedAt}>{formatMessageTime(msg.postedAt)}</time>
         </span>
-        <span className="election-feed__message-poster">{msg.poster}</span>
       </header>
 
       <p className="election-feed__message-body">{msg.text}</p>
@@ -36,16 +36,6 @@ export function ElectionFeedMessage({ msg, isNewest }: Props) {
         </span>
         <span>{msg.anchor.state}</span>
       </p>
-
-      {msg.tags.length > 0 ? (
-        <ul className="election-feed__message-tags" aria-label="Tags">
-          {msg.tags.map((tag) => (
-            <li key={tag} className="election-feed__message-tag">
-              {tag}
-            </li>
-          ))}
-        </ul>
-      ) : null}
     </article>
   );
 }

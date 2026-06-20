@@ -131,7 +131,7 @@ export function ElectionFeedFilters({
         </div>
       ) : (
         <p className="election-feed__filter-active-label election-feed__filter-active--all">
-          Showing live updates from every state in the feed.
+          Live updates from all states.
         </p>
       )}
     </section>

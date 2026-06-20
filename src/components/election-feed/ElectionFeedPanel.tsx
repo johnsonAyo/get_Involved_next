@@ -70,8 +70,9 @@ export function ElectionFeedPanel(props: Props) {
     }
 
     function onPointerDown(event: MouseEvent) {
-      const target = event.target as Node | null;
+      const target = event.target as Element | null;
       if (!target) return;
+      if (target.closest?.(".site-header__theme-toggle")) return;
       if (!panelRef.current) return;
       if (panelRef.current.contains(target)) return;
       event.preventDefault();
@@ -237,8 +238,7 @@ function ReadBody({
           {visibleMessages.length} update{visibleMessages.length === 1 ? "" : "s"}
         </span>
         <span className="election-feed__panel-meta">
-          Updates posted to a specific polling unit. Posting arrives in a
-          follow-up slice.
+          Updates are posted to specific polling units.
         </span>
       </footer>
     </>

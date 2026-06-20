@@ -498,12 +498,12 @@ export function PostComposer({ onPosted }: Props) {
             </p>
           </header>
           <p className="post-composer__gate-copy">
-            Posting live updates is currently closed for <strong>{displayState}</strong>. It will be open on the election date.
+            Posting live updates is currently closed for <strong>{displayState}</strong>. It will be opened on the election day.
           </p>
           <div className="post-composer__active-notice">
             <p className="ds-eyebrow ds-eyebrow--accent">Active Election</p>
             <p className="post-composer__gate-copy">
-              Live updates are currently open for <strong>{ACTIVE_ELECTION.state}</strong> as it is their election.
+              Live updates are currently open for <strong>{ACTIVE_ELECTION.state}</strong> as its election is currently ongoing.
             </p>
           </div>
         </div>
