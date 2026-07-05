@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { revalidateTag } from "next/cache";
+import { requireAuth } from "../../auth";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
@@ -29,6 +29,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 // PUT /api/studio/profiles/[id]
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await params;
   const supabase = createServiceClient();
   const body = await request.json();
@@ -60,13 +63,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  revalidateTag("candidates", "max");
-
   return NextResponse.json(data);
 }
 
 // DELETE /api/studio/profiles/[id]
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await params;
   const supabase = createServiceClient();
 
@@ -75,8 +79,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  revalidateTag("candidates", "max");
 
   return NextResponse.json({ success: true });
 }

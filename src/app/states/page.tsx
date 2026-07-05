@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import { StatesPage } from "./StatesClient";
 import { getCandidates } from "@/lib/content-store.server";
+
+export const metadata: Metadata = {
+  title: "Nigerian States & Candidates | Get Involved",
+  description:
+    "Browse candidates by state across all 36 Nigerian states and the FCT. Filter by local government area.",
+};
 
 type SearchParams = Record<string, string | string[] | undefined>;
 

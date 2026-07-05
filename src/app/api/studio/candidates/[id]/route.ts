@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { revalidateTag } from "next/cache";
+import { requireAuth } from "../../auth";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
@@ -18,24 +18,33 @@ export async function GET(_req: NextRequest, { params }: RouteParams) {
 
   const { data: candidate, error } = await supabase
     .from("candidates")
-    .select(`
-      *,
-      profile:profile_id (*),
-      party:party_id (*)
-    `)
+    .select('*')
     .eq("id", id)
     .single();
 
-  if (error || !candidate) {
+  if (!candidate) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(candidate);
+  // Fetch related data manually
+  const { data: profile } = await supabase.from("profile").select("*").eq("id", candidate.profile_id).maybeSingle();
+  const { data: party } = await supabase.from("parties").select("*").eq("id", candidate.party_id).maybeSingle();
+
+  const enrichedData = {
+    ...candidate,
+    profile: profile || null,
+    party: party || null
+  };
+
+  return NextResponse.json(enrichedData);
 }
 
 // ─── PUT /api/studio/candidates/[id] ─────────────────────────────────────────
 // Body carries candidacy fields.
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await params;
   const supabase = createServiceClient();
   const body = await request.json();
@@ -50,13 +59,16 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     .update({
       profile_id: body.profile_id,
       year: body.year ?? null,
+      position_id: body.position_id ?? null,
       position: body.position ?? "",
+      position_sort_order: body.position_sort_order ?? null,
       party_id: body.party_id ?? null,
       state_id: body.state_id ?? "",
       lga: body.lga ?? "",
       vice_candidate_name: body.vice_candidate_name ?? "",
       display: body.display !== false,
       source: Array.isArray(body.source) ? body.source : [],
+      payload: body,
       updated_at: new Date().toISOString(),
     })
     .eq("id", id)
@@ -76,13 +88,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     })
     .eq("id", body.profile_id);
 
-  revalidateTag("candidates", "max");
-
   return NextResponse.json(data);
 }
 
 // ─── DELETE /api/studio/candidates/[id] ──────────────────────────────────────
-export async function DELETE(_req: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   const { id } = await params;
   const supabase = createServiceClient();
 
@@ -91,8 +104,6 @@ export async function DELETE(_req: NextRequest, { params }: RouteParams) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-
-  revalidateTag("candidates", "max");
 
   return NextResponse.json({ success: true });
 }

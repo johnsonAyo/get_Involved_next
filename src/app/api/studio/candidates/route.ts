@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { revalidateTag } from "next/cache";
+import { requireAuth } from "../auth";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
@@ -26,11 +26,7 @@ export async function GET(request: NextRequest) {
   // Fetch candidates with profile and party joined
   let query = supabase
     .from("candidates")
-    .select(`
-      *,
-      profile:profile_id (*),
-      party:party_id (*)
-    `)
+    .select('*')
     .order("year", { ascending: false, nullsFirst: false });
 
   const position = searchParams.get("position");
@@ -50,16 +46,23 @@ export async function GET(request: NextRequest) {
     // we fetch all and filter in-memory for the studio (manageable dataset).
   }
 
-  const { data: candidates, error } = await query;
+  const { data, error } = await query;
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const enrichedData = (candidates || []).map((candidate: any) => ({
+  // Fetch related data manually to avoid schema cache/foreign key issues
+  const { data: profilesData } = await supabase.from("profile").select("*");
+  const { data: partiesData } = await supabase.from("parties").select("*");
+
+  const profilesMap = new Map((profilesData || []).map(p => [p.id, p]));
+  const partiesMap = new Map((partiesData || []).map(p => [p.id, p]));
+
+  const enrichedData = (data || []).map((candidate: any) => ({
     ...candidate,
-    profile: candidate.profile || null,
-    party: candidate.party || null
+    profile: candidate.profile_id ? profilesMap.get(candidate.profile_id) || null : null,
+    party: candidate.party_id ? partiesMap.get(candidate.party_id) || null : null
   }));
 
   // Apply name search in memory (studio only, not public API)
@@ -84,6 +87,9 @@ export async function GET(request: NextRequest) {
 //   candidateFields: { profile_id, year, position_id, position, position_sort_order,
 //                      party_id, state_id, lga, vice_candidate_name, display, source }
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = createServiceClient();
   const body = await request.json();
 
@@ -98,13 +104,16 @@ export async function POST(request: NextRequest) {
     id: candidateId,
     profile_id: body.profile_id,
     year: body.year ?? null,
+    position_id: body.position_id ?? null,
     position: body.position ?? "",
+    position_sort_order: body.position_sort_order ?? null,
     party_id: body.party_id ?? null,
     state_id: body.state_id ?? "",
     lga: body.lga ?? "",
     vice_candidate_name: body.vice_candidate_name ?? "",
     display: body.display !== false,
     source: Array.isArray(body.source) ? body.source : [],
+    payload: body,
     updated_at: new Date().toISOString(),
   };
 
@@ -123,8 +132,6 @@ export async function POST(request: NextRequest) {
     latest_election_year: body.year ?? null,
     last_known_position: body.position ?? null,
   }).eq("id", body.profile_id);
-
-  revalidateTag("candidates", "max");
 
   return NextResponse.json(data, { status: 201 });
 }

@@ -1,3 +1,5 @@
+import "@/env";
+
 import type { Metadata } from "next";
 /* Direct JS import for election-feed.css. Token / design-system /
  * page stylesheets continue to load via globals.css's @import chain
@@ -20,6 +22,18 @@ export const metadata: Metadata = {
     "Search Nigerian candidates by office, party, state, and local government — and follow live election updates from every polling unit on Election Watch.",
   icons: {
     icon: "/assets/logo/nigeria-1758969_1280_4.png",
+  },
+  openGraph: {
+    title: "Get Involved | Know Your Candidates",
+    description:
+      "Search Nigerian candidates by office, party, state, and local government.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Get Involved | Know Your Candidates",
+    description:
+      "Search Nigerian candidates by office, party, state, and local government.",
   },
 };
 

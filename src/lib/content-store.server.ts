@@ -10,16 +10,14 @@ import type {
 import { createClient } from "@supabase/supabase-js";
 import { nigeriaGeo } from "@/data/nigeria.js";
 import { unstable_cache } from "next/cache";
+import { SUPABASE_URL, SUPABASE_SECRET_KEY } from "@/env";
 
 function hasServerSupabaseConfig() {
-  return !!process.env.NEXT_PUBLIC_SUPABASE_URL && !!process.env.SUPABASE_SECRET_KEY;
+  return !!SUPABASE_URL && !!SUPABASE_SECRET_KEY;
 }
 
 function createSupabaseServerClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SECRET_KEY!
-  );
+  return createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 }
 
 type CandidateRow = {

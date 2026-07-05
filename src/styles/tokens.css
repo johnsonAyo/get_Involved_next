@@ -46,6 +46,12 @@
   src: url("/assets/fonts/chakra-petch-700.woff2") format("woff2");
 }
 
+@keyframes skeletonPulse {
+  0%   { opacity: 0.4; }
+  50%  { opacity: 0.8; }
+  100% { opacity: 0.4; }
+}
+
 :root {
   --ds-color-ink: #050505;
   --ds-color-ink-soft: #1a1a1a;

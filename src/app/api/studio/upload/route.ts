@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { requireAuth } from "../auth";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_SECRET_KEY = process.env.SUPABASE_SECRET_KEY!;
@@ -13,6 +14,9 @@ function createServiceClient() {
 // Accepts multipart/form-data with a "file" field.
 // Returns { url: string } — the public URL of the uploaded asset.
 export async function POST(request: NextRequest) {
+  const authError = await requireAuth(request);
+  if (authError) return authError;
+
   const supabase = createServiceClient();
   const formData = await request.formData();
   const file = formData.get("file");

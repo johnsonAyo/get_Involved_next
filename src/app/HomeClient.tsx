@@ -9,8 +9,8 @@ import { SafeCandidateCard } from "../components/SafeCandidateCard";
 import { SearchFilter } from "../components/SearchFilter";
 import { SiteHeader } from "../components/SiteHeader";
 import { SiteFooter } from "../components/SiteFooter";
-import { useCarouselIndex } from "../hooks/useCarouselIndex";
 import { nigeriaGeo } from "../data/nigeria.js";
+import { useCarouselIndex } from "../hooks/useCarouselIndex";
 
 import type {
   Candidate,
@@ -20,6 +20,12 @@ import type {
 
 const CAROUSEL_DELAY_MS = 60000;
 const MIN_SWIPE_DISTANCE = 50;
+const STATE_COUNT = nigeriaGeo.filter(({ id }) => id !== "fct").length;
+const LOCAL_GOVERNMENT_COUNT = nigeriaGeo.reduce(
+  (sum, state) => sum + state.lgas.length,
+  0,
+);
+const numberFormatter = new Intl.NumberFormat("en-NG");
 
 type Props = {
   candidates?: Candidate[];
@@ -114,6 +120,34 @@ export function HomePage({
     ...senators,
     ...reps,
     ...assembly,
+  ];
+  const marqueeItems = [
+    {
+      id: "states",
+      type: "single" as const,
+      value: String(STATE_COUNT),
+      label: "States + FCT",
+    },
+    {
+      id: "lgas",
+      type: "single" as const,
+      value: String(LOCAL_GOVERNMENT_COUNT),
+      label: "Local Governments",
+    },
+    {
+      id: "national-assembly",
+      type: "paired" as const,
+      stats: [
+        { value: "360", label: "House of Representatives Seats" },
+        { value: "109", label: "Senate Seats" },
+      ],
+    },
+    {
+      id: "records",
+      type: "single" as const,
+      value: numberFormatter.format(candidates.length),
+      label: "Candidate Records",
+    },
   ];
 
   const totalStates = nigeriaGeo.filter((state) => state.id !== "fct").length;
