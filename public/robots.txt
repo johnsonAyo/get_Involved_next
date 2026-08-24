@@ -1,0 +1,12 @@
+User-agent: *
+Crawl-delay: 5
+Allow: /
+
+User-agent: GPTBot
+Disallow: /polling-units/
+
+User-agent: CCBot
+Disallow: /polling-units/
+
+User-agent: Bytespider
+Disallow: /polling-units/
