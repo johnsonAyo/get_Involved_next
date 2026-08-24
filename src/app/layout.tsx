@@ -1,6 +1,7 @@
 import "@/env";
 
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 /* Direct JS import for election-feed.css. Token / design-system /
  * page stylesheets continue to load via globals.css's @import chain
  * because they shipped cleanly. election-feed.css is imported here
@@ -69,6 +70,7 @@ export default async function RootLayout({
         <Providers>
           {children}
           <ElectionFeedWidget states={states} />
+          <Analytics />
         </Providers>
       </body>
     </html>
