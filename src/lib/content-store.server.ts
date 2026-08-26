@@ -320,7 +320,7 @@ export const getParties = unstable_cache(
   { revalidate: 86400, tags: ["parties"] }
 );
 
-export async function getPollingUnits({
+async function fetchPollingUnits({
   cursor = "",
   direction = "next",
   lga = "",
@@ -503,6 +503,12 @@ async function fetchFacts(): Promise<Fact[]> {
   if (error || !data) return [];
   return data as Fact[];
 }
+
+export const getPollingUnits = unstable_cache(
+  fetchPollingUnits,
+  ["polling-units-search"],
+  { revalidate: 300 },
+);
 
 export const getFacts = unstable_cache(
   fetchFacts,

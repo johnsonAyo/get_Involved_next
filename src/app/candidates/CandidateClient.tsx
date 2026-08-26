@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import type { CSSProperties } from "react";
 import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -280,13 +281,16 @@ export function CandidatePage({
   candidateId,
   initialFilters,
 }: Props) {
-  const [searchQuery, setSearchQuery] = useState(initialFilters?.query || "");
-  const [selectedParty, setSelectedParty] = useState(initialFilters?.party || "");
-  const [selectedPosition, setSelectedPosition] = useState(
-    initialFilters?.position || "",
-  );
-  const [selectedStateId, setSelectedStateId] = useState(initialFilters?.state || "");
-  const [selectedLga, setSelectedLga] = useState(initialFilters?.lga || "");
+  const searchParams = useSearchParams();
+  const filter = (key: string) => {
+    const value = key as keyof NonNullable<Props["initialFilters"]>;
+    return initialFilters?.[value] ?? searchParams.get(key) ?? "";
+  };
+  const [searchQuery, setSearchQuery] = useState(filter("query"));
+  const [selectedParty, setSelectedParty] = useState(filter("party"));
+  const [selectedPosition, setSelectedPosition] = useState(filter("position"));
+  const [selectedStateId, setSelectedStateId] = useState(filter("state"));
+  const [selectedLga, setSelectedLga] = useState(filter("lga"));
 
   function resetSuggestedFilters() {
     setSelectedParty("");

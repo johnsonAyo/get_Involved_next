@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { CandidatePage } from "./CandidateClient";
 import { getCandidates } from "@/lib/content-store.server";
 
@@ -8,34 +9,14 @@ export const metadata: Metadata = {
     "Browse Nigerian election candidates by office, party, state, and local government. Search the full candidate directory.",
 };
 
-type SearchParams = Record<string, string | string[] | undefined>;
+export const revalidate = 300;
 
-function readSearchParam(
-  value: string | string[] | undefined,
-): string | undefined {
-  return typeof value === "string" ? value : Array.isArray(value) ? value[0] : undefined;
-}
-
-export const dynamic = "force-dynamic";
-
-export default async function Page({
-  searchParams,
-}: {
-  searchParams?: Promise<SearchParams>;
-}) {
-  const params = (searchParams ? await searchParams : {}) as SearchParams;
+export default async function Page() {
   const candidates = await getCandidates();
 
   return (
-    <CandidatePage
-      candidates={candidates}
-      initialFilters={{
-        lga: readSearchParam(params.lga) || "",
-        party: readSearchParam(params.party) || "",
-        position: readSearchParam(params.position) || "",
-        query: readSearchParam(params.query) || "",
-        state: readSearchParam(params.state) || "",
-      }}
-    />
+    <Suspense fallback={null}>
+        <CandidatePage candidates={candidates} />
+    </Suspense>
   );
 }

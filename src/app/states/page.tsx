@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { StatesPage } from "./StatesClient";
 import { getCandidates } from "@/lib/content-store.server";
 
@@ -8,31 +9,14 @@ export const metadata: Metadata = {
     "Browse candidates by state across all 36 Nigerian states and the FCT. Filter by local government area.",
 };
 
-type SearchParams = Record<string, string | string[] | undefined>;
+export const revalidate = 300;
 
-function readSearchParam(
-  value: string | string[] | undefined,
-): string | undefined {
-  return typeof value === "string" ? value : Array.isArray(value) ? value[0] : undefined;
-}
-
-export const dynamic = "force-dynamic";
-
-export default async function Page({
-  searchParams,
-}: {
-  searchParams?: Promise<SearchParams>;
-}) {
-  const params = (searchParams ? await searchParams : {}) as SearchParams;
+export default async function Page() {
   const candidates = await getCandidates();
 
   return (
-    <StatesPage
-      candidates={candidates}
-      initialLga={readSearchParam(params.lga) || ""}
-      initialParty={readSearchParam(params.party) || ""}
-      initialPosition={readSearchParam(params.position) || ""}
-      initialStateId={readSearchParam(params.state) || "abia"}
-    />
+    <Suspense fallback={null}>
+      <StatesPage candidates={candidates} />
+    </Suspense>
   );
 }

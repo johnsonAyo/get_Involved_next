@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useLayoutEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { stateNames, getLgas } from "@/data/nigeria.js";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -356,11 +356,12 @@ export function StatesPage({
   initialPosition?: string;
   initialStateId?: string;
 }) {
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const [selectedStateId, setSelectedStateId] = useState(initialStateId);
-  const [selectedLga, setSelectedLga] = useState(initialLga);
-  const [selectedParty, setSelectedParty] = useState(initialParty);
-  const [selectedPosition, setSelectedPosition] = useState(initialPosition);
+  const [selectedStateId, setSelectedStateId] = useState(searchParams.get("state") || "abia");
+  const [selectedLga, setSelectedLga] = useState(searchParams.get("lga") || "");
+  const [selectedParty, setSelectedParty] = useState(searchParams.get("party") || "");
+  const [selectedPosition, setSelectedPosition] = useState(searchParams.get("position") || "");
 
   useEffect(() => {
     const params = new URLSearchParams();
