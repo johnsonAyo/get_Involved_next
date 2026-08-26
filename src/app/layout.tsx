@@ -15,7 +15,7 @@ import "../styles/election-feed.css";
 import "./globals.css";
 import Providers from "./providers";
 import { ElectionFeedWidget } from "@/components/election-feed";
-import { getGeoStates } from "@/app/actions/polling-units";
+import { getGeoStates } from "@/lib/content-store.server";
 
 export const metadata: Metadata = {
   title: "Get Involved | Know Your Candidates",

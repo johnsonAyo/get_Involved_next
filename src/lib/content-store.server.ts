@@ -806,3 +806,37 @@ export const getPollingUnitStateStats = unstable_cache(
   ["polling-unit-state-stats"],
   { revalidate: 86400, tags: ["state-stats"] },
 );
+
+export type GeoState = { id: string; name: string };
+
+async function fetchGeoStates(): Promise<GeoState[]> {
+  if (hasServerSupabaseConfig()) {
+    try {
+      const supabase = createSupabaseServerClient();
+      const { data, error } = await supabase
+        .from("geo_states")
+        .select("id, name")
+        .order("name", { ascending: true });
+
+      if (!error && data) {
+        return data.map((row: { id: string; name: string }) => ({
+          id: row.id,
+          name: formatPollingUnitText(row.name),
+        }));
+      }
+    } catch {
+      // fall through to local geography data
+    }
+  }
+
+  return [...nigeriaGeo]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((state) => ({
+      id: state.id,
+      name: state.name,
+    }));
+}
+
+export const getGeoStates = unstable_cache(fetchGeoStates, ["geo-states"], {
+  revalidate: 86400,
+});

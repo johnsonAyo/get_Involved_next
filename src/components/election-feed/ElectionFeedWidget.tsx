@@ -5,7 +5,7 @@ import { ElectionFeedFab } from "./ElectionFeedFab";
 import { ComposeFab } from "./ComposeFab";
 import { ElectionFeedPanel, type ElectionFeedMode } from "./ElectionFeedPanel";
 import { useElectionFeedState } from "./useElectionFeedState";
-import type { GeoState } from "@/app/actions/polling-units";
+import type { GeoState } from "@/lib/content-store.server";
 
 type Props = {
   states: GeoState[];

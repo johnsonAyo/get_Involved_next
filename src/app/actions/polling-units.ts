@@ -17,41 +17,6 @@ function createServerSupabase() {
   return createClient(supabaseUrl, supabaseKey);
 }
 
-export type GeoState = {
-  id: string;
-  name: string;
-};
-
-/**
- * Fetch all states from the geo_states lookup table, falling back to local geography data.
- */
-export async function getGeoStates(): Promise<GeoState[]> {
-  const supabase = createServerSupabase();
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from("geo_states")
-        .select("id, name")
-        .order("name", { ascending: true });
-
-      if (!error && data) {
-        return data.map((row) => ({
-          id: row.id,
-          name: formatPollingUnitText(row.name),
-        }));
-      }
-    } catch (err) {
-      console.error("Error in getGeoStates DB query:", err);
-    }
-  }
-
-  return [...nigeriaGeo]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((state) => ({
-      id: state.id,
-      name: state.name,
-    }));
-}
 
 /**
  * Fetch LGAs for a given state slug from the geo_lgas lookup table, falling back to local geography data.

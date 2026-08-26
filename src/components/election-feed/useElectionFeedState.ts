@@ -13,7 +13,8 @@ import {
   INITIAL_MESSAGES,
   POSTER_HANDLES,
 } from "./mockMessages";
-import type { GeoState, GeoPollingUnit } from "@/app/actions/polling-units";
+import type { GeoState } from "@/lib/content-store.server";
+import type { GeoPollingUnit } from "@/app/actions/polling-units";
 import {
   getPollingUnitLgas,
   getPollingUnitWards,
