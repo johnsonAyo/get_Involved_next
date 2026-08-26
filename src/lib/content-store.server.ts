@@ -440,7 +440,7 @@ async function fetchPollingUnits({
   }
 }
 
-export async function getPollingUnitById(idOrCode: string): Promise<PollingUnit | null> {
+async function fetchPollingUnitById(idOrCode: string): Promise<PollingUnit | null> {
   if (!hasServerSupabaseConfig()) return null;
 
   const value = decodeURIComponent(idOrCode).trim();
@@ -507,6 +507,12 @@ async function fetchFacts(): Promise<Fact[]> {
 export const getPollingUnits = unstable_cache(
   fetchPollingUnits,
   ["polling-units-search"],
+  { revalidate: 300 },
+);
+
+export const getPollingUnitById = unstable_cache(
+  fetchPollingUnitById,
+  ["polling-unit-by-id"],
   { revalidate: 300 },
 );
 

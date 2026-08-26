@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { EvidenceCard } from "../components/EvidenceCard";
 import { NigeriaStatesMap } from "../components/NigeriaStatesMap";
 import { SafeCandidateCard } from "../components/SafeCandidateCard";
@@ -44,6 +44,9 @@ export function HomePage({
   initialStateId = "",
   pollingUnitStateStats = [],
 }: Props) {
+  const searchParams = useSearchParams();
+  const resolvedLga = initialLga || searchParams.get("lga") || "";
+  const resolvedStateId = initialStateId || searchParams.get("state") || "";
   const router = useRouter();
   const { index: featuredIndex, setIndex: setFeaturedIndex } = useCarouselIndex({
     delayMs: CAROUSEL_DELAY_MS,
@@ -262,8 +265,8 @@ export function HomePage({
             </p>
 
             <SearchFilter
-              initialStateId={initialStateId}
-              initialLga={initialLga}
+              initialStateId={resolvedStateId}
+              initialLga={resolvedLga}
             />
 
             <div className="hero__submit-candidate" style={{ marginTop: "1rem" }}>
