@@ -32,11 +32,13 @@ export const createClient = (request: NextRequest) => {
 };
 
 export async function updateSession(request: NextRequest) {
-  const { supabase, supabaseResponse } = createClient(request);
-  
-  if (request.nextUrl.pathname.startsWith('/studio')) {
-    await supabase.auth.getUser();
+  if (!request.nextUrl.pathname.startsWith('/studio')) {
+    return NextResponse.next();
   }
-  
+
+  const { supabase, supabaseResponse } = createClient(request);
+
+  await supabase.auth.getUser();
+
   return supabaseResponse;
 }
