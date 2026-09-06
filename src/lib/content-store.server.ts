@@ -504,11 +504,33 @@ async function fetchFacts(): Promise<Fact[]> {
   return data as Fact[];
 }
 
-export const getPollingUnits = unstable_cache(
-  fetchPollingUnits,
-  ["polling-units-search"],
-  { revalidate: 300 },
-);
+export async function getPollingUnits(
+  filters: PollingUnitSearchFilters = {},
+): Promise<PollingUnitSearchResult> {
+  const normalized = {
+    cursor: filters.cursor ?? "",
+    direction: filters.direction ?? "next",
+    lga: filters.lga ?? "",
+    query: filters.query ?? "",
+    state: filters.state ?? "",
+    ward: filters.ward ?? "",
+    page: filters.page ?? 1,
+  };
+  return unstable_cache(
+    () => fetchPollingUnits(normalized),
+    [
+      "polling-units-search",
+      normalized.cursor,
+      normalized.direction,
+      normalized.lga,
+      normalized.query,
+      normalized.state,
+      normalized.ward,
+      String(normalized.page),
+    ],
+    { revalidate: 300 },
+  )();
+}
 
 export const getPollingUnitById = unstable_cache(
   fetchPollingUnitById,
