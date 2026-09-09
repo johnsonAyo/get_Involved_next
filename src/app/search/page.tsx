@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { CandidatePage } from "../candidates/CandidateClient";
 import { getCandidates } from "@/lib/content-store.server";
 
@@ -8,10 +9,14 @@ export const metadata: Metadata = {
     "Search Nigerian election candidates by name, party, office, state, and local government area.",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 export default async function Page() {
   const candidates = await getCandidates();
 
-  return <CandidatePage candidates={candidates} />;
+  return (
+    <Suspense fallback={null}>
+      <CandidatePage candidates={candidates} />
+    </Suspense>
+  );
 }
