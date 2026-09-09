@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPollingUnits } from "@/lib/content-store.server";
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(result, {
     headers: {
-      "Cache-Control": "s-maxage=300, stale-while-revalidate=86400",
+      "Cache-Control": "s-maxage=86400, stale-while-revalidate=86400",
     },
   });
 }

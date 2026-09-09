@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Browse candidates by state across all 36 Nigerian states and the FCT. Filter by local government area.",
 };
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 export default async function Page() {
   const candidates = await getCandidates();

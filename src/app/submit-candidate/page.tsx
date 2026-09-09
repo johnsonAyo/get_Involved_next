@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     "Add a candidate to the public record. Submit an aspirant's details with a verifiable public source.",
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 86400;
 
 export default async function Page() {
   const [positions, states, parties] = await Promise.all([

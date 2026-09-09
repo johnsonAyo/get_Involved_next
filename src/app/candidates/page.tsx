@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     "Browse Nigerian election candidates by office, party, state, and local government. Search the full candidate directory.",
 };
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 export default async function Page() {
   const candidates = await getCandidates();

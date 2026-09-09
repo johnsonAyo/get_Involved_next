@@ -72,7 +72,7 @@ function PollingUnitResult({ unit }: { unit: PollingUnit }) {
   );
 }
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 export default async function Page({
   searchParams,

@@ -528,14 +528,14 @@ export async function getPollingUnits(
       normalized.ward,
       String(normalized.page),
     ],
-    { revalidate: 300 },
+    { revalidate: 86400 },
   )();
 }
 
 export const getPollingUnitById = unstable_cache(
   fetchPollingUnitById,
   ["polling-unit-by-id"],
-  { revalidate: 300 },
+  { revalidate: 86400 },
 );
 
 export const getFacts = unstable_cache(

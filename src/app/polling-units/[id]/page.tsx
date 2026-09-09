@@ -53,7 +53,7 @@ function formatSourceDate(value?: string): string {
   }
 }
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 export const dynamicParams = true;
 

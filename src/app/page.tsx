@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     "Search any candidate name. Select your state and local government. See every party contesting and exactly who is on the ballot.",
 };
 
-export const revalidate = 300;
+export const revalidate = 86400;
 
 export default async function Page() {
   const [candidates, facts, pollingUnitStateStats] = await Promise.all([
